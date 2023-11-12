@@ -1,0 +1,56 @@
+# 注意⚠️：这只是一个示例的配置文件，请先拷贝一份并命名为 config.yml 再进行使用
+
+selenium: # selenium 模拟器相关配置
+  chrome-driver-path: /Users/ambitious/App/chromedriver_mac_arm64/chromedriver # ChromeDriver 在本地的路径
+  show-window: false # 运行程序时，是否实时显示模拟浏览器窗口
+
+decoder: # 解码器相关配置
+  use: youtube-dl # 使用哪种解析方式，可选值：none, free-api, vip-fetch, youtube-dl，若使用 youtube-dl，resource-type 会被忽略
+  resource-type: m3u8 # 解析出来的文件类型，可选值：mp4, m3u8
+  youtube-dl: # youtube-dl 解析器相关配置
+    cookies-from: firefox # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
+    format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
+      - h4-2
+  free-api: # 使用免费接口进行解析的相关配置
+    use: JsonPlayer # 要使用的解析接口，必须和 decoder.free-api.apis 配置列表中的任意一个匹配
+    apis: # 免费接口列表，格式：name,url
+      - JsonPlayer,https://jx.jsonplayer.com/player/?url=
+      - XiaMi,https://jx.xmflv.com/?url=
+      - Mao,https://www.mtosz.com/player/Mao.php?code=Mao&if=1&url=
+      - Ok,https://okjx.cc/?url=
+      - Direct,
+    valid-url-prefixes: # 各大视频网站解析出来的资源地址前缀
+      - om.tc.qq.com
+      - gtimg.com
+      - https://cache.m3u8.pw/Cache/qq
+      - https://videocut-upload-sz.oss-cn-shenzhen.aliyuncs.com
+      - https://cache.xmflv.cc:4433/Cache/qq
+      - https://sluiceyf.titan.mgtv.com
+      - https://pcvideoaliyun.titan.mgtv.com
+      - https://vz-asp83m00-ts2.immmm.top
+      - https://upos-sz-mirrorcos.bilivideo.com/upgcxcode
+    wait-seconds: 30 # 进入解析网站等待解析的时间
+  vip-fetch: # 提取视频网站资源相关配置（需要先开通相应的会员）⚠️：不建议使用这种方式了，使用 youtube-dl 更稳更方便
+    use: qy # 提取哪个视频网站
+    sites: # 视频网站配置
+      qy:
+        domain: .iqiyi.com # Cookie 用于哪个域名
+        cookies: # 视频网站的登录态 Cookie，格式：key,value
+          - yourKey,yourValue
+      yk:
+        domain: .youku.com
+        cookies:
+          - yourKey,yourValue
+
+downloader:
+  use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
+  task-thread-count: 1 # 处理下载任务的线程个数
+  dl-thread-count: 32 # 多线程下载的线程个数
+  download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+  ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
+
+transfer:
+  use: ffmpeg # 要选用哪个转码器，可选值：file-channel, cv, ffmpeg
+  ts-filename-regex: (?<=_)(\d+)(?=\.) # 正则表达式，用于匹配出 ts 文件的序号
+
+os: windows-x86
