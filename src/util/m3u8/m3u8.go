@@ -28,8 +28,9 @@ var ValidM3U8ContentTypes = map[string]struct{}{
 }
 
 // 检查一个 url 是否是 m3u8 地址
-// @url: 要检查的地址
-// @headers: 附加的请求头
+// @param url 要检查的地址
+// @param headers 附加的请求头
+// @return 是否是一个有效的 m3u8 地址
 func CheckM3U8(url string, headers map[string]string) bool {
 	if len(url) == 0 {
 		return false
@@ -74,8 +75,8 @@ func CheckM3U8(url string, headers map[string]string) bool {
 }
 
 // 读取 M3U8 文件中的 ts 文件列表
-// @m3u8url: m3u8 文件的下载地址
-// @headers 请求头，可以为空
+// @param m3u8url m3u8 文件的下载地址
+// @param headers 请求头，可以为空
 // @return ts 文件列表
 func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, error) {
 	if strings.HasPrefix(m3u8Url, NetworkLinkPrefix) {
@@ -122,8 +123,8 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 }
 
 // 读取网络 M3U8 文件
-// @m3u8Url: url
-// @headers: 请求头
+// @param m3u8Url url
+// @param headers 请求头
 // @return ts urls
 func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, error) {
 	if !CheckM3U8(m3u8Url, headers) {

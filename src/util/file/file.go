@@ -1,14 +1,36 @@
 package file
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"video-downloader-go/src/util/log"
 
 	"github.com/pkg/errors"
 )
 
+// 生成一个用于下载 ts 文件的临时目录
+// @param filename 文件名称
+// @return 生成的临时目录绝对路径
+func InitTempTsDir(filename string) (string, error) {
+	suffix := "ts_dir"
+	// TODO: suffix 暂时写死，需要从配置中读取
+	dirPath := fmt.Sprintf("%v_%v", filename, suffix)
+	_, err := os.Stat(dirPath)
+	if err == nil {
+		log.Warn("临时目录已存在：" + dirPath)
+		return dirPath, nil
+	}
+	err = os.MkdirAll(dirPath, fs.ModeDir)
+	if err != nil {
+		return "", errors.Wrap(err, "创建临时目录失败")
+	}
+	return dirPath, nil
+}
+
 // 初始化文件的父目录
-// @path 文件的绝对路径
+// @param path 文件的绝对路径
 func InitFileDirs(path string) error {
 	// 1 获取文件的父目录的绝对路径
 	parentPath, err := filepath.Abs(filepath.Dir(path))
