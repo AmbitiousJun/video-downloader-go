@@ -152,6 +152,10 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta
 			printRetryError("构造请求时发生异常", err)
 			continue
 		}
+		// 添加请求头
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
 		resp, err := client.Do(req)
 		if err != nil {
 			printRetryError("发送请求时出现异常", err)
