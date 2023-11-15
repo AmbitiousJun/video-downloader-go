@@ -35,12 +35,15 @@ func CheckM3U8(url string, headers map[string]string) bool {
 	if len(url) == 0 {
 		return false
 	}
+	printRetryError := func(prefix string, err error) {
+		log.Warn(fmt.Sprintf("%v：%v，两秒后重试", prefix, err.Error()))
+		time.Sleep(2000)
+	}
 	for {
 		log.Info("正在解析 m3u8 信息...")
 		request, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			log.Warn(fmt.Sprintf("解析异常：%v，两秒后重试", err.Error()))
-			time.Sleep(2000)
+			printRetryError("构造请求失败", err)
 			continue
 		}
 		// 添加请求头
@@ -52,20 +55,17 @@ func CheckM3U8(url string, headers map[string]string) bool {
 		client := http.DefaultClient
 		resp, err := client.Do(request)
 		if err != nil {
-			log.Warn(fmt.Sprintf("解析异常：%v，两秒后重试", err.Error()))
-			time.Sleep(2000)
+			printRetryError("发送请求异常", err)
 			continue
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			log.Warn(fmt.Sprintf("解析异常：错误码 %v，两秒后重试", resp.StatusCode))
-			time.Sleep(2000)
+			printRetryError("请求响应异常", err)
 			continue
 		}
 		contentType := resp.Header.Get("Content-Type")
 		if len(contentType) == 0 {
-			log.Warn(fmt.Sprintf("解析异常：%v，两秒后重试", "无法获取目标的 Content-Type 属性"))
-			time.Sleep(2000)
+			printRetryError("解析异常", errors.New("无法获取目标的 Content-Type 属性"))
 			continue
 		}
 		contentType = strings.Split(strings.ToLower(contentType), ";")[0]
