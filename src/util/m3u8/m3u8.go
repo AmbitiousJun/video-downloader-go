@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"video-downloader-go/src/entity"
@@ -81,21 +81,22 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 	if strings.HasPrefix(m3u8Url, NetworkLinkPrefix) {
 		return readHttpTsUrls(m3u8Url, headers)
 	}
-	stat, err := os.Stat(m3u8Url[7:])
+	prefix := LocalFilePrefix + "://"
+	if !strings.HasPrefix(m3u8Url, LocalFilePrefix) {
+		return nil, errors.New("本地文件请以 \"" + prefix + "\" 作为前缀")
+	}
+	m3u8Url = m3u8Url[7:]
+	stat, err := os.Stat(m3u8Url)
 	for err != nil || stat.IsDir() {
 		// 如果有错误，说明文件不存在，重复判断
 		log.Info("查找不到本地的 m3u8 文件：" + m3u8Url)
-		time.Sleep(1000)
-		stat, err = os.Stat(m3u8Url[7:])
+		time.Sleep(3000)
+		stat, err = os.Stat(m3u8Url)
 	}
 	// 1 读取数据
-	mUrl, err := url.Parse(m3u8Url)
+	mFile, err := os.Open(m3u8Url)
 	if err != nil {
-		return nil, errors.Wrap(err, "转换本地 m3u8 url 出现异常")
-	}
-	mFile, err := os.Open(mUrl.Path)
-	if err != nil {
-		return nil, errors.Wrapf(err, "打开本地 m3u8 文件出现异常，path: %v", mUrl.Path)
+		return nil, errors.Wrapf(err, "打开本地 m3u8 文件出现异常，path: %v", m3u8Url)
 	}
 	defer mFile.Close()
 	ans := []*entity.TsMeta{}
@@ -112,7 +113,11 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 		// 2 封装对象
 		ans = append(ans, entity.NewTsMeta(line, len(ans)+1))
 	}
-	// 3 TODO 删除 m3u8 文件
+	// 3 删除 m3u8 文件
+	err = os.Remove(m3u8Url)
+	if err != nil {
+		log.Warn("删除本地 m3u8 文件失败：" + err.Error())
+	}
 	return ans, nil
 }
 
@@ -121,5 +126,56 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 // @headers: 请求头
 // @return ts urls
 func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, error) {
-	return nil, nil
+	if !CheckM3U8(m3u8Url, headers) {
+		return nil, errors.New("不是规范的 m3u8 地址")
+	}
+	// 1 找到后缀的位置
+	queryPos := strings.Index(m3u8Url, "?")
+	if queryPos == -1 {
+		queryPos = len(m3u8Url)
+	}
+	// 2 找到后缀之前的第一个 '/'
+	lastSepPos := strings.LastIndex(m3u8Url[:queryPos], "/")
+	if lastSepPos == -1 {
+		return nil, errors.New("m3u8 地址不规范")
+	}
+	baseUrl := m3u8Url[:lastSepPos]
+	printRetryError := func(prefix string, err error) {
+		log.Warn(fmt.Sprintf("%v：%v，两秒后重试", prefix, err.Error()))
+		time.Sleep(2000)
+	}
+	// 3 读取 m3u8 信息
+	client := http.DefaultClient
+	for {
+		req, err := http.NewRequest("GET", m3u8Url, nil)
+		if err != nil {
+			printRetryError("构造请求时发生异常", err)
+			continue
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			printRetryError("发送请求时出现异常", err)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			printRetryError("发送请求时出现异常", errors.New("错误码："+strconv.Itoa(resp.StatusCode)))
+			continue
+		}
+		defer resp.Body.Close()
+		scanner := bufio.NewScanner(resp.Body)
+		ans := []*entity.TsMeta{}
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "#") || strings.TrimSpace(line) == "" {
+				// 去除注释和空行
+				continue
+			}
+			if !strings.HasPrefix(line, NetworkLinkPrefix) {
+				// 补充 baseUrl
+				line = baseUrl + "/" + line
+			}
+			ans = append(ans, &entity.TsMeta{Url: line, Index: len(ans) + 1})
+		}
+		return ans, nil
+	}
 }
