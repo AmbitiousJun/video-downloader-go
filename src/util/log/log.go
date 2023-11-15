@@ -5,9 +5,9 @@ import (
 	"context"
 	sysLog "log"
 	"math"
-	"os"
 	"sync"
 	"time"
+	"video-downloader-go/src/appctx"
 )
 
 // 日志颜色输出常量
@@ -41,14 +41,6 @@ func UnBlock() {
 // 阻塞日志输出
 func Block() {
 	blockFlag = true
-}
-
-// 等待日志队列中的日志全部输出完之后退出程序
-func FlushAndExit(code int) {
-	for HasLog() {
-		time.Sleep(time.Second)
-	}
-	os.Exit(code)
 }
 
 // 添加一条 info 日志到队列中
@@ -95,16 +87,25 @@ func printAllLogs() {
 	}
 }
 
+// 初始化日治包
+func init() {
+	logInit := make(chan struct{})
+	appctx.WaitGroup().Add(1)
+	go listenAndPrintLogs(logInit)
+	<-logInit
+}
+
 // 初始化日志包
 func InitLog(ctx context.Context, wg *sync.WaitGroup) {
 	logInit := make(chan struct{})
-	go listenAndPrintLogs(ctx, wg, logInit)
+	go listenAndPrintLogs(logInit)
 	<-logInit
 }
 
 // 监听日志队列并统一输出日志
-func listenAndPrintLogs(ctx context.Context, wg *sync.WaitGroup, logInit chan struct{}) {
-	defer wg.Done()
+func listenAndPrintLogs(logInit chan struct{}) {
+	ctx := appctx.Context()
+	defer appctx.WaitGroup().Done()
 	Info("日志输出线程启动成功，开始监听并输出日志...")
 	logInit <- struct{}{}
 	for {
