@@ -6,7 +6,15 @@ import (
 	"video-downloader-go/src/util/file"
 )
 
-func TestInitFileDirs(t *testing.T) {
+func TestDeleteDir(t *testing.T) {
+	path := "c:/Users/Ambitious/Downloads/1.mp4_ts_dir"
+	success := file.DeleteDir(path)
+	if !success {
+		t.Error("删除目录失败")
+	}
+}
+
+func TestInitFileDir(t *testing.T) {
 	path := "/Users/ambitious/Downloads/test/1.txt"
 	err := file.InitFileDirs(path)
 	if err != nil {

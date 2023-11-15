@@ -10,6 +10,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// 删除目录
+// @param dirPath 要删除目录的绝对路径
+// @return 是否删除成功
+func DeleteDir(dirPath string) bool {
+	fileInfo, err := os.Stat(dirPath)
+	if err != nil || !fileInfo.IsDir() {
+		// 没有这个目录，或者不是目录
+		return false
+	}
+	err = os.RemoveAll(dirPath)
+	return err == nil
+}
+
 // 生成一个用于下载 ts 文件的临时目录
 // @param filename 文件名称
 // @return 生成的临时目录绝对路径
