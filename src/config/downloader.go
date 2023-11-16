@@ -2,8 +2,11 @@
 package config
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 	"strings"
+	"video-downloader-go/src/util"
 	"video-downloader-go/src/util/log"
 
 	"github.com/pkg/errors"
@@ -19,8 +22,8 @@ type Downloader struct {
 }
 
 const (
-	SimpleDownload      = "simple"       // 单线程下载
-	MultiThreadDownload = "multi-thread" // 多线程下载
+	DownloadSimple      = "simple"       // 单线程下载
+	DownloadMultiThread = "multi-thread" // 多线程下载
 )
 
 const (
@@ -29,6 +32,14 @@ const (
 	RateLimitMaxValueMBPS         = RateLimitMaxValueKBPS / 1024      // mbps 最大下载速率
 	RateLimitMinValueMBPS float64 = 0.1                               // mbps 最小下载速率
 )
+
+// 全局唯一的下载速率限制令牌桶对象
+var tokenBucket *util.MyTokenBucket
+
+// 获取令牌桶对象
+func RateLimitBucket() *util.MyTokenBucket {
+	return tokenBucket
+}
 
 // 检查下载器配置是否正确
 func checkDownloaderConfig() error {
@@ -39,7 +50,7 @@ func checkDownloaderConfig() error {
 	}
 	if strings.TrimSpace(cfg.Use) == "" || !downloadTypeValid(cfg.Use) {
 		log.Warn("没有配置下载类型或配置错误，默认使用多线程下载")
-		cfg.Use = MultiThreadDownload
+		cfg.Use = DownloadMultiThread
 	}
 	if cfg.TaskThreadCount <= 0 {
 		log.Warn("没有配置下载任务处理线程数或配置错误，使用默认值：2")
@@ -53,13 +64,72 @@ func checkDownloaderConfig() error {
 		log.Warn("没有配置临时 ts 目录后缀或配置错误，使用默认值：temp_ts_files")
 		cfg.TsDirSuffix = "temp_ts_files"
 	}
-	// TODO: 初始化令牌桶
+	// 默认速率是 5mbps
+	var err error
+	var rate float64 = 5 * 1024 * 1024
+	kbps, mbps := "kbps", "mbps"
+	if cfg.RateLimit = strings.TrimSpace(cfg.RateLimit); cfg.RateLimit != "" {
+		if cfg.RateLimit == "-1" {
+			rate = RateLimitMaxValueMBPS * 1024 * 1024
+		} else if strings.HasSuffix(cfg.RateLimit, kbps) {
+			val := cfg.RateLimit[:len(cfg.RateLimit)-len(kbps)]
+			rate, err = checkKbpsRateLimit(val)
+			if err != nil {
+				return errors.Wrap(err, "检查下载器配置时出现异常")
+			}
+			log.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, kbps))
+			rate *= 1024
+		} else if strings.HasSuffix(cfg.RateLimit, mbps) {
+			val := cfg.RateLimit[:len(cfg.RateLimit)-len(mbps)]
+			rate, err = checkMbpsRateLimit(val)
+			if err != nil {
+				return errors.Wrap(err, "检查下载器配置时出现异常")
+			}
+			log.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, mbps))
+			rate *= 1024 * 1024
+		} else {
+			log.Warn("没有配置限速或者配置出错，启用默认的速率限制：5mbps")
+		}
+	}
+	// 初始化令牌桶
+	tokenBucket, err = util.NewTokenBucket(int64(rate))
+	if err != nil {
+		return errors.Wrap(err, "初始化速率限制令牌桶时出现异常")
+	}
 	return nil
+}
+
+// 检查 kbps 速率是否合法
+// @param val 用户输入的速率
+// @return 如果合法，转换成 float64 类型并返回，不合法则返回 error
+func checkKbpsRateLimit(val string) (float64, error) {
+	res, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return -1, errors.Wrapf(err, "转换下载速率异常：%v", val)
+	}
+	if res < RateLimitMinValueKBPS || res > RateLimitMaxValueKBPS {
+		return -1, errors.New(fmt.Sprintf("速率限制范围（kbps）：[%.1f, %.1f]", RateLimitMinValueKBPS, RateLimitMaxValueKBPS))
+	}
+	return res, nil
+}
+
+// 检查 mbps 速率是否合法
+// @param val 用户输入的速率
+// @return 如果合法，转换成 float64 类型并返回，不合法则返回 error
+func checkMbpsRateLimit(val string) (float64, error) {
+	res, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return -1, errors.Wrapf(err, "转换下载速率异常：%v", val)
+	}
+	if res < RateLimitMinValueMBPS || res > RateLimitMaxValueMBPS {
+		return -1, errors.New(fmt.Sprintf("速率限制范围（mbps）：[%.1f, %.1f]", RateLimitMinValueMBPS, RateLimitMaxValueMBPS))
+	}
+	return res, nil
 }
 
 // 检查下载类型是否合法
 // @param use 下载器类型
 // @return 是否合法
 func downloadTypeValid(use string) bool {
-	return use == SimpleDownload || use == MultiThreadDownload
+	return use == DownloadSimple || use == DownloadMultiThread
 }

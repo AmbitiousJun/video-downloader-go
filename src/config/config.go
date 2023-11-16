@@ -14,8 +14,9 @@ var YoutubeDlPath string
 
 type Config struct {
 	Downloader Downloader `yaml:"downloader"` // 下载器
-
-	Os string `yaml:"os"` // 运行操作系统
+	Transfer   Transfer   `yaml:"transfer"`   // 转换器
+	Decoder    Decoder    `yaml:"decoder"`    // 解析器
+	Os         string     `yaml:"os"`         // 运行操作系统
 }
 
 // 全局配置对象
@@ -39,6 +40,16 @@ func Load() error {
 	err = checkDownloaderConfig()
 	if err != nil {
 		return errors.Wrap(err, "下载器配置异常")
+	}
+	// 5 检查转换器配置
+	err = checkTransferConfig()
+	if err != nil {
+		return errors.Wrap(err, "转换器配置异常")
+	}
+	// 6 检查解析器配置
+	err = checkDecoderConfig()
+	if err != nil {
+		return errors.Wrap(err, "解析器配置异常")
 	}
 	return nil
 }
