@@ -8,11 +8,12 @@ import (
 )
 
 func main() {
+	defer appctx.WaitGroup().Wait()
+	defer appctx.CancelFunc()()
 	err := config.Load()
 	if err != nil {
 		log.Error(err.Error())
+		return
 	}
 	fmt.Println(config.GlobalConfig)
-	appctx.CancelFunc()()
-	appctx.WaitGroup().Wait()
 }

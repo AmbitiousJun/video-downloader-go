@@ -2,7 +2,10 @@
 package config
 
 import (
+	"fmt"
+	"os/exec"
 	"strings"
+	"video-downloader-go/src/util/log"
 
 	"github.com/pkg/errors"
 )
@@ -46,6 +49,15 @@ func checkTransferConfig() error {
 
 // 检查 ffmpeg 环境
 func checkFfmpegEnv() error {
-	// TODO: 检查 ffmpeg 可执行文件是否能够正常使用
+	cmd := exec.Command(FfmpegPath, "--help")
+	output, err := cmd.Output()
+	if err != nil {
+		return errors.Wrap(err, "检查 ffmpeg 环境失败")
+	}
+	result := string(output)
+	if !strings.Contains(result, "usage: ffmpeg") {
+		return errors.New(fmt.Sprintf("检查 ffmpeg 环境失败：%v", result))
+	}
+	log.Success("检查 ffmpeg 环境成功")
 	return nil
 }

@@ -10,6 +10,7 @@ decoder: # 解码器相关配置
   youtube-dl: # youtube-dl 解析器相关配置
     cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
     format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
+      - 137+140
   free-api: # 使用免费接口进行解析的相关配置
     use: JsonPlayer # 要使用的解析接口，必须和 decoder.free-api.apis 配置列表中的任意一个匹配
     apis: # 免费接口列表，格式：name,url
@@ -50,7 +51,7 @@ downloader:
   rate-limit: 3.5mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
 
 transfer:
-  use: ffmpeg1 # 要选用哪个转码器，可选值：ffmpeg
+  use: ffmpeg # 要选用哪个转码器，可选值：ffmpeg
   ts-filename-regex: (?<=_)(\d+)(?=\.) # 正则表达式，用于匹配出 ts 文件的序号
 
 os: windows-x86
