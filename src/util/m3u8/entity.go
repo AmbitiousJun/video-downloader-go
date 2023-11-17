@@ -1,5 +1,4 @@
-// 处理 m3u8 文件的相关实体
-package entity
+package m3u8
 
 // ts 文件信息
 type TsMeta struct {

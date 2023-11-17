@@ -27,9 +27,7 @@ func DeleteDir(dirPath string) bool {
 // @param filename 文件名称
 // @return 生成的临时目录绝对路径
 func InitTempTsDir(filename string) (string, error) {
-	suffix := "ts_dir"
-	// TODO: suffix 暂时写死，需要从配置中读取
-	dirPath := fmt.Sprintf("%v_%v", filename, suffix)
+	dirPath := fmt.Sprintf("%v_%v", filename, "temp_ts_dir")
 	_, err := os.Stat(dirPath)
 	if err == nil {
 		log.Warn("临时目录已存在：" + dirPath)

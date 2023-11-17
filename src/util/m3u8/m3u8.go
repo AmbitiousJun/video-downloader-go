@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"video-downloader-go/src/entity"
 	"video-downloader-go/src/util/log"
 
 	"github.com/pkg/errors"
@@ -78,7 +77,7 @@ func CheckM3U8(url string, headers map[string]string) bool {
 // @param m3u8url m3u8 文件的下载地址
 // @param headers 请求头，可以为空
 // @return ts 文件列表
-func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, error) {
+func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 	if strings.HasPrefix(m3u8Url, NetworkLinkPrefix) {
 		return readHttpTsUrls(m3u8Url, headers)
 	}
@@ -100,7 +99,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 		return nil, errors.Wrapf(err, "打开本地 m3u8 文件出现异常，path: %v", m3u8Url)
 	}
 	defer mFile.Close()
-	ans := []*entity.TsMeta{}
+	ans := []*TsMeta{}
 	scanner := bufio.NewScanner(mFile)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -112,7 +111,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 			return nil, errors.New("m3u8 文件不规范：检测不到 http 协议")
 		}
 		// 2 封装对象
-		ans = append(ans, entity.NewTsMeta(line, len(ans)+1))
+		ans = append(ans, NewTsMeta(line, len(ans)+1))
 	}
 	// 3 删除 m3u8 文件
 	err = os.Remove(m3u8Url)
@@ -126,7 +125,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, er
 // @param m3u8Url url
 // @param headers 请求头
 // @return ts urls
-func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta, error) {
+func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 	if !CheckM3U8(m3u8Url, headers) {
 		return nil, errors.New("不是规范的 m3u8 地址")
 	}
@@ -168,7 +167,7 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta
 		}
 		defer resp.Body.Close()
 		scanner := bufio.NewScanner(resp.Body)
-		ans := []*entity.TsMeta{}
+		ans := []*TsMeta{}
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.HasPrefix(line, "#") || strings.TrimSpace(line) == "" {
@@ -179,7 +178,7 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*entity.TsMeta
 				// 补充 baseUrl
 				line = baseUrl + "/" + line
 			}
-			ans = append(ans, &entity.TsMeta{Url: line, Index: len(ans) + 1})
+			ans = append(ans, &TsMeta{Url: line, Index: len(ans) + 1})
 		}
 		return ans, nil
 	}
