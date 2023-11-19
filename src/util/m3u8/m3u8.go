@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+	"video-downloader-go/src/config"
+	"video-downloader-go/src/transfer"
 	"video-downloader-go/src/util/log"
+	"video-downloader-go/src/util/myhttp"
 
 	"github.com/pkg/errors"
 )
@@ -51,7 +55,7 @@ func CheckM3U8(url string, headers map[string]string) bool {
 		}
 		request.Header.Set("Connection", "Close")
 		// 创建客户端，发送请求
-		client := http.DefaultClient
+		client := myhttp.TimeoutHttpClient()
 		resp, err := client.Do(request)
 		if err != nil {
 			printRetryError("发送请求异常", err)
@@ -145,7 +149,7 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 		time.Sleep(2000)
 	}
 	// 3 读取 m3u8 信息
-	client := http.DefaultClient
+	client := myhttp.TimeoutHttpClient()
 	for {
 		req, err := http.NewRequest("GET", m3u8Url, nil)
 		if err != nil {
@@ -182,4 +186,20 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 		}
 		return ans, nil
 	}
+}
+
+// 合并 ts 文件列表
+// @param tsDirPath 临时目录
+func Merge(tsDirPath string) error {
+	dirName := filepath.Base(tsDirPath)
+	fileName := dirName[:len(dirName)-len(config.GlobalConfig.Downloader.TsDirSuffix)-1]
+	log.Info(fmt.Sprintf("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName))
+	err := transfer.Instance().Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName)
+	if err != nil {
+		return errors.Wrap(err, "合并失败")
+	}
+	if err = os.RemoveAll(tsDirPath); err != nil {
+		log.Error(fmt.Sprintf("临时目录删除失败，目标视频：%s", fileName))
+	}
+	return nil
 }

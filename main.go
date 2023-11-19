@@ -10,7 +10,7 @@ import (
 func main() {
 	defer appctx.WaitGroup().Wait()
 	defer appctx.CancelFunc()()
-	err := config.Load()
+	err := config.Load("")
 	if err != nil {
 		log.Error(err.Error())
 		return

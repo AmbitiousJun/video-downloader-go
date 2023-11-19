@@ -10,6 +10,25 @@ import (
 	"github.com/pkg/errors"
 )
 
+// 检查文件是否存在
+func FileExist(filePath string) bool {
+	_, err := os.Stat(filePath)
+	return err == nil
+}
+
+// 删除文件，如果存在
+// @return: 第一个参数表示文件是否存在，第二个参数表示删除是否成功
+func DeleteFileIfExist(filePath string) (bool, bool) {
+	if !FileExist(filePath) {
+		return false, false
+	}
+	err := os.Remove(filePath)
+	if err != nil {
+		return true, false
+	}
+	return true, true
+}
+
 // 删除目录
 // @param dirPath 要删除目录的绝对路径
 // @return 是否删除成功

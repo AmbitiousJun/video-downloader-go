@@ -20,7 +20,7 @@ const (
 )
 
 // 默认的 ts 文件名序号匹配正则
-const DefaultFilenameRegex = "(?<=_)(\\d+)(?=\\.)"
+const DefaultFilenameRegex = "_(\\d+)\\."
 
 // 检查转换器配置
 func checkTransferConfig() error {

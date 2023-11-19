@@ -2,10 +2,8 @@
 package log
 
 import (
-	"context"
 	sysLog "log"
 	"math"
-	"sync"
 	"time"
 	"video-downloader-go/src/appctx"
 )
@@ -87,17 +85,10 @@ func printAllLogs() {
 	}
 }
 
-// 初始化日治包
+// 初始化日志包
 func init() {
 	logInit := make(chan struct{})
 	appctx.WaitGroup().Add(1)
-	go listenAndPrintLogs(logInit)
-	<-logInit
-}
-
-// 初始化日志包
-func InitLog(ctx context.Context, wg *sync.WaitGroup) {
-	logInit := make(chan struct{})
 	go listenAndPrintLogs(logInit)
 	<-logInit
 }

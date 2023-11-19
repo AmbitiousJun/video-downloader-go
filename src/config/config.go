@@ -1,9 +1,9 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
+	"video-downloader-go/src/util/file"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -23,9 +23,12 @@ type Config struct {
 var GlobalConfig = &Config{}
 
 // 全局加载配置
-func Load() error {
+func Load(configFilePath string) error {
+	if configFilePath = strings.TrimSpace(configFilePath); len(configFilePath) == 0 {
+		configFilePath = "config/config.yml"
+	}
 	// 1 读取整个配置文件
-	fileBytes, err := ioutil.ReadFile("config/config.yml")
+	fileBytes, err := os.ReadFile(configFilePath)
 	if err != nil {
 		return errors.Wrap(err, "读取配置文件失败")
 	}
@@ -78,8 +81,7 @@ func checkPath(path string) (string, error) {
 	validExtensions := []string{"", ".exe", ".sh", ".cmd"}
 	for _, ext := range validExtensions {
 		newPath := path + ext
-		_, err := os.Stat(newPath)
-		if err == nil {
+		if file.FileExist(newPath) {
 			return newPath, nil
 		}
 	}

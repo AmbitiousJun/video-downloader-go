@@ -1,19 +1,24 @@
 package m3u8_test
 
 import (
-	"context"
 	"fmt"
-	"sync"
 	"testing"
-	"video-downloader-go/src/util/log"
+	"video-downloader-go/src/appctx"
+	"video-downloader-go/src/config"
+	"video-downloader-go/src/transfer"
 	"video-downloader-go/src/util/m3u8"
 )
 
+func TestTsTransferInit(t *testing.T) {
+	defer appctx.WaitGroup().Wait()
+	defer appctx.CancelFunc()()
+	config.Load("/Users/ambitious/Desktop/学习/Go/projects/video-downloader-go/config/config.yml")
+	fmt.Println(transfer.Instance())
+}
+
 func TestReadTsUrls(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	var wg sync.WaitGroup
-	wg.Add(1)
-	log.InitLog(ctx, &wg)
+	defer appctx.WaitGroup().Wait()
+	defer appctx.CancelFunc()()
 	headers := map[string]string{}
 	url := "https://apd-vlive.apdcdn.tc.qq.com/defaultts.tc.qq.com/B_tRCdt2L6hl1ezG-aht1_p264FX2g4lSJ8vpBLy4ShDviX-0x9w95_rx7NVLaVkg3/svp_50112/fHIXvYesr8QrPXsCjJ1lSnBscoDoNQMbDWSOSjKfwfkHSXo2ErfZlPoGcDRkHOnLj3Tqz98eseYnD-CVfNZQChihBULS2NAOPTdrKgCLkNV68aaPAm62SN2_rdqSMHz4VuPJxBtWV20Suri1hZa1dNb2RD0kfkPrG3wtBkVjG_LiaWliiU9WCtSJQ-1kdkacVGLHCnXyNkI5lgiPfNRAHMqSvkI19YhEoTG4zkdFOxahbEqflwZPRA/gzc_1000102_0b53zuafgaaax4apbskt7js4btodkpaaav2a.f322016.ts.m3u8?ver=4"
 	metas, err := m3u8.ReadTsUrls(url, headers)
@@ -23,15 +28,11 @@ func TestReadTsUrls(t *testing.T) {
 	for _, meta := range metas {
 		fmt.Println(*meta)
 	}
-	cancel()
-	wg.Wait()
 }
 
 func TestCheckM3U8(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	var wg sync.WaitGroup
-	wg.Add(1)
-	log.InitLog(ctx, &wg)
+	defer appctx.WaitGroup().Wait()
+	defer appctx.CancelFunc()()
 	headers := map[string]string{
 		"Referer": "https://mgtv.com",
 	}
@@ -40,6 +41,4 @@ func TestCheckM3U8(t *testing.T) {
 	if !res {
 		t.Fail()
 	}
-	cancel()
-	wg.Wait()
 }
