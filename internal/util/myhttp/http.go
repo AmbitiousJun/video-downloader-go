@@ -2,13 +2,18 @@ package myhttp
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/util"
 
 	"github.com/pkg/errors"
 )
@@ -62,6 +67,116 @@ var TimeoutHttpClient = (func() func() *http.Client {
 		return client
 	}
 })()
+
+// 下载一个网络资源到本地的文件上，并进行网络限速
+// @param request 构造好的请求对象
+// @param destPath 要下载到本地文件的绝对路径
+// @return 下载错误
+func DownloadWithRateLimit(request *http.Request, destPath string) error {
+	url := request.URL.String()
+	method := request.Method
+	headers := HttpHeader2Map(request.Header.Clone())
+	// 1 预请求，获取要下载文件的总大小
+	ranges, err := GetRequestRanges(url, method, headers)
+	if err != nil {
+		return errors.Wrap(err, "获取文件下载范围失败")
+	}
+	RemoveRangeHeader(headers)
+	start, end := ranges[0], ranges[1]
+	// 2 分割文件进行下载，每次下载前先到令牌桶中获取能够下载的字节数
+	bucket := config.RateLimitBucket()
+	client := TimeoutHttpClient()
+	dest, err := os.OpenFile(destPath, os.O_RDWR|os.O_CREATE, 0777)
+	if err != nil {
+		return errors.Wrapf(err, "无法打开或创建目标文件：%s", destPath)
+	}
+	defer dest.Close()
+	for start < end {
+		consume := bucket.TryConsume(end - start)
+		if consume <= 0 {
+			// 抢不到令牌，睡眠一小会，防止过渡消耗系统资源
+			time.Sleep(time.Second / 10)
+			continue
+		}
+		rangeHeader := fmt.Sprintf("bytes=%v-%v", start, start+consume)
+		// 请求部分资源
+		subRequest, err := CloneHttpRequest(request)
+		if err != nil {
+			util.PrintRetryError("克隆请求对象时出现异常", err, 2)
+			continue
+		}
+		subRequest.Header.Set(HttpHeaderRangesKey, rangeHeader)
+		resp, err := client.Do(subRequest)
+		if err != nil {
+			util.PrintRetryError("发送请求时出现异常", err, 2)
+			continue
+		}
+		code := resp.StatusCode
+		if !Is2xxSuccess(code) {
+			if code == 416 {
+				return errors.New("检测到 416 错误码")
+			}
+			util.PrintRetryError(fmt.Sprintf("错误码：%v", code), nil, 2)
+			continue
+		}
+		if resp.Body == nil {
+			util.PrintRetryError("响应体为空", nil, 2)
+			continue
+		}
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			util.PrintRetryError("读取数据异常", nil, 2)
+			continue
+		}
+		// 3 将请求下来的文件分片，定位写入到目标文件中
+		dest.Seek(start, 0)
+		dest.Write(bodyBytes)
+		start += consume
+		bucket.CompleteConsume(consume)
+		resp.Body.Close()
+	}
+	return nil
+}
+
+// 克隆 http 请求对象
+// @param origin 原始对象
+// @return 克隆对象
+func CloneHttpRequest(original *http.Request) (*http.Request, error) {
+	newUrl, err := url.Parse(original.URL.String())
+	if err != nil {
+		return nil, err
+	}
+	newHeader := make(http.Header)
+	for key, values := range original.Header {
+		newHeader[key] = values
+	}
+	newRequest := &http.Request{
+		Method:        original.Method,
+		URL:           newUrl,
+		Proto:         original.Proto,
+		ProtoMajor:    original.ProtoMajor,
+		ProtoMinor:    original.ProtoMinor,
+		Header:        newHeader,
+		Body:          original.Body,
+		ContentLength: original.ContentLength,
+		Host:          original.Host,
+	}
+	return newRequest, nil
+}
+
+// 将 http 请求头转换为普通的 map
+// @param header 请求头
+// @return 普通的 map
+func HttpHeader2Map(header http.Header) map[string]string {
+	res := make(map[string]string)
+	if header == nil {
+		return res
+	}
+	for key, values := range header {
+		res[key] = values[len(values)-1]
+	}
+	return res
+}
 
 // 移除 Range 请求头
 // @param headers 要移除的 map 对象

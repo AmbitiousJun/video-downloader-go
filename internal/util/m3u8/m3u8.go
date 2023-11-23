@@ -11,6 +11,7 @@ import (
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/transfer"
+	"video-downloader-go/internal/util"
 	"video-downloader-go/internal/util/log"
 	"video-downloader-go/internal/util/myhttp"
 
@@ -38,15 +39,11 @@ func CheckM3U8(url string, headers map[string]string) bool {
 	if len(url) == 0 {
 		return false
 	}
-	printRetryError := func(prefix string, err error) {
-		log.Warn(fmt.Sprintf("%v：%v，两秒后重试", prefix, err.Error()))
-		time.Sleep(2000)
-	}
 	for {
 		log.Info("正在解析 m3u8 信息...")
 		request, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			printRetryError("构造请求失败", err)
+			util.PrintRetryError("构造请求失败", err, 2)
 			continue
 		}
 		// 添加请求头
@@ -58,17 +55,17 @@ func CheckM3U8(url string, headers map[string]string) bool {
 		client := myhttp.TimeoutHttpClient()
 		resp, err := client.Do(request)
 		if err != nil {
-			printRetryError("发送请求异常", err)
+			util.PrintRetryError("发送请求异常", err, 2)
 			continue
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			printRetryError("请求响应异常", err)
+			util.PrintRetryError("请求响应异常", err, 2)
 			continue
 		}
 		contentType := resp.Header.Get("Content-Type")
 		if len(contentType) == 0 {
-			printRetryError("解析异常", errors.New("无法获取目标的 Content-Type 属性"))
+			util.PrintRetryError("解析异常", errors.New("无法获取目标的 Content-Type 属性"), 2)
 			continue
 		}
 		contentType = strings.Split(strings.ToLower(contentType), ";")[0]
@@ -94,7 +91,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 	for err != nil || stat.IsDir() {
 		// 如果有错误，说明文件不存在，重复判断
 		log.Info("查找不到本地的 m3u8 文件：" + m3u8Url)
-		time.Sleep(3000)
+		time.Sleep(time.Second * 3)
 		stat, err = os.Stat(m3u8Url)
 	}
 	// 1 读取数据
@@ -144,16 +141,12 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 		return nil, errors.New("m3u8 地址不规范")
 	}
 	baseUrl := m3u8Url[:lastSepPos]
-	printRetryError := func(prefix string, err error) {
-		log.Warn(fmt.Sprintf("%v：%v，两秒后重试", prefix, err.Error()))
-		time.Sleep(2000)
-	}
 	// 3 读取 m3u8 信息
 	client := myhttp.TimeoutHttpClient()
 	for {
 		req, err := http.NewRequest("GET", m3u8Url, nil)
 		if err != nil {
-			printRetryError("构造请求时发生异常", err)
+			util.PrintRetryError("构造请求时发生异常", err, 2)
 			continue
 		}
 		// 添加请求头
@@ -162,11 +155,11 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			printRetryError("发送请求时出现异常", err)
+			util.PrintRetryError("发送请求时出现异常", err, 2)
 			continue
 		}
 		if resp.StatusCode != http.StatusOK {
-			printRetryError("发送请求时出现异常", errors.New("错误码："+strconv.Itoa(resp.StatusCode)))
+			util.PrintRetryError("发送请求时出现异常", errors.New("错误码："+strconv.Itoa(resp.StatusCode)), 2)
 			continue
 		}
 		defer resp.Body.Close()
