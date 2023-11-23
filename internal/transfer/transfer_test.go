@@ -2,8 +2,8 @@ package transfer_test
 
 import (
 	"testing"
-	"video-downloader-go/src/config"
-	"video-downloader-go/src/transfer"
+	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/transfer"
 )
 
 func TestFfmpegTransfer(t *testing.T) {

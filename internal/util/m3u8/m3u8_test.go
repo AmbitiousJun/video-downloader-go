@@ -3,10 +3,10 @@ package m3u8_test
 import (
 	"fmt"
 	"testing"
-	"video-downloader-go/src/appctx"
-	"video-downloader-go/src/config"
-	"video-downloader-go/src/transfer"
-	"video-downloader-go/src/util/m3u8"
+	"video-downloader-go/internal/appctx"
+	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/transfer"
+	"video-downloader-go/internal/util/m3u8"
 )
 
 func TestTsTransferInit(t *testing.T) {

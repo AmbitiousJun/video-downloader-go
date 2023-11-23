@@ -5,7 +5,7 @@ import (
 	sysLog "log"
 	"math"
 	"time"
-	"video-downloader-go/src/appctx"
+	"video-downloader-go/internal/appctx"
 )
 
 // 日志颜色输出常量

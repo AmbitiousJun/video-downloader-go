@@ -12,10 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"video-downloader-go/src/config"
-	"video-downloader-go/src/util/file"
-	"video-downloader-go/src/util/log"
-	"video-downloader-go/src/util/mymath"
+	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/util/file"
+	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mymath"
 
 	"github.com/pkg/errors"
 )

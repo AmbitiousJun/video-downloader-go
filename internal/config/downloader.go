@@ -6,8 +6,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"video-downloader-go/src/util"
-	"video-downloader-go/src/util/log"
+	"video-downloader-go/internal/util"
+	"video-downloader-go/internal/util/log"
 
 	"github.com/pkg/errors"
 )

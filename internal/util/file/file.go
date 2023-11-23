@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"video-downloader-go/src/util/log"
+	"video-downloader-go/internal/util/log"
 
 	"github.com/pkg/errors"
 )

@@ -2,7 +2,7 @@ package transfer
 
 import (
 	"sync"
-	"video-downloader-go/src/config"
+	"video-downloader-go/internal/config"
 )
 
 // ts 文件转换器接口

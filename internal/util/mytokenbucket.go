@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"video-downloader-go/src/appctx"
-	"video-downloader-go/src/util/log"
-	"video-downloader-go/src/util/mymath"
+	"video-downloader-go/internal/appctx"
+	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mymath"
 )
 
 type MyTokenBucket struct {

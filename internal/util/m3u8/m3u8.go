@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"video-downloader-go/src/config"
-	"video-downloader-go/src/transfer"
-	"video-downloader-go/src/util/log"
-	"video-downloader-go/src/util/myhttp"
+	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/transfer"
+	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/myhttp"
 
 	"github.com/pkg/errors"
 )

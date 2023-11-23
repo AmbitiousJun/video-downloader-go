@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"video-downloader-go/src/util/log"
+	"video-downloader-go/internal/util/log"
 
 	"github.com/pkg/errors"
 )

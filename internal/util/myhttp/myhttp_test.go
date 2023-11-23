@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"video-downloader-go/src/util/myhttp"
+	"video-downloader-go/internal/util/myhttp"
 )
 
 func TestGetRequestRanges(t *testing.T) {

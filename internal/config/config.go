@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 	"strings"
-	"video-downloader-go/src/util/file"
+	"video-downloader-go/internal/util/file"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"

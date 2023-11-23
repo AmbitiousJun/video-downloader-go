@@ -3,7 +3,7 @@ package file_test
 import (
 	"fmt"
 	"testing"
-	"video-downloader-go/src/util/file"
+	"video-downloader-go/internal/util/file"
 )
 
 func TestDeleteDir(t *testing.T) {
