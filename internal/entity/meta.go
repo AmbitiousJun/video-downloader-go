@@ -1,6 +1,6 @@
 package entity
 
-import "video-downloader-go/src/util/myhttp"
+import "video-downloader-go/internal/util/myhttp"
 
 // 视频文件元数据
 type VideoMeta struct {

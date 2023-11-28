@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"video-downloader-go/src/appctx"
-	"video-downloader-go/src/config"
-	"video-downloader-go/src/util/log"
+	"video-downloader-go/internal/appctx"
+	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/util/log"
 )
 
 func main() {
