@@ -50,20 +50,15 @@ func GenDefaultHeaderMapByUrl(baseMap map[string]string, url string) map[string]
 // 获取一个有超时限制的 http 请求客户端（单例模式）
 var TimeoutHttpClient = (func() func() *http.Client {
 	var client *http.Client = nil
-	var mu sync.Mutex
+	var once sync.Once
 	return func() *http.Client {
-		if client == nil {
-			mu.Lock()
-			defer mu.Unlock()
-			if client == nil {
-				transport := http.Transport{
-					Dial:                  (&net.Dialer{Timeout: ConnectTimeout}).Dial,
-					ResponseHeaderTimeout: ReadTimeout,
-				}
-				client = &http.Client{Transport: &transport}
-				return client
+		once.Do(func() {
+			transport := http.Transport{
+				Dial:                  (&net.Dialer{Timeout: ConnectTimeout}).Dial,
+				ResponseHeaderTimeout: ReadTimeout,
 			}
-		}
+			client = &http.Client{Transport: &transport}
+		})
 		return client
 	}
 })()
