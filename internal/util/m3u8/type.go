@@ -7,8 +7,3 @@ type TsMeta struct {
 	// 记录 ts 文件是位于第几个，便于后期合成
 	Index int
 }
-
-// 创建一个新的 TsMeta 结构
-func NewTsMeta(url string, index int) *TsMeta {
-	return &TsMeta{Url: url, Index: index}
-}

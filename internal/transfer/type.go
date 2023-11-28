@@ -7,7 +7,3 @@ type TsTransfer interface {
 	// @param outputPath 合并后输出的文件绝对地址
 	Ts2Mp4(tsDir, outputPath string) error
 }
-
-func NewFfmpegTransfer() TsTransfer {
-	return &ffmpegTransfer{}
-}

@@ -14,7 +14,7 @@ var Instance = (func() func() TsTransfer {
 			tfType := config.GlobalConfig.Transfer.Use
 			switch tfType {
 			case config.TransferFfmpeg:
-				t = NewFfmpegTransfer()
+				t = &ffmpegTransfer{}
 			default:
 				panic("没有初始化 ts 转换器类型")
 			}

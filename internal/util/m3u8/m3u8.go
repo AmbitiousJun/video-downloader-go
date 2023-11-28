@@ -112,7 +112,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 			return nil, errors.New("m3u8 文件不规范：检测不到 http 协议")
 		}
 		// 2 封装对象
-		ans = append(ans, NewTsMeta(line, len(ans)+1))
+		ans = append(ans, &TsMeta{Url: line, Index: len(ans) + 1})
 	}
 	// 3 删除 m3u8 文件
 	err = os.Remove(m3u8Url)
