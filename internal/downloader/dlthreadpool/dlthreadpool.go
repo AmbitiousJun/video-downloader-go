@@ -1,33 +1,57 @@
-// 负责多线程处理下载任务
+// 负责多协程处理下载任务
 
 package dlthreadpool
 
-import "video-downloader-go/internal/config"
+import (
+	"time"
+	"video-downloader-go/internal/config"
 
-type Pool struct {
-	PoolChannel chan struct{}  // 用于同步协程的通道
-	PoolSize    int            // 线程池大小
-	WaitQueue   []func() error // 等待队列
-}
+	"github.com/panjf2000/ants/v2"
+	"github.com/pkg/errors"
+)
 
 // 处理任务的线程池
-var TaskPool *Pool
+var TaskPool *ants.Pool
 
-// 处理下载任务的线程池
-var DownloadPool *Pool
+// 处理下载任务的协程池
+var DownloadPool *ants.Pool
 
-// 从全局配置中初始化线程池
-func InitFromGlobalConfig() {
+// 从全局配置中初始化协程池
+func InitFromGlobalConfig() (err error) {
+	defer func() {
+		if err != nil {
+			// 清除初始化一半的协程池
+			ReleaseAll()
+		}
+	}()
 	tasks := config.GlobalConfig.Downloader.TaskThreadCount
 	downloads := config.GlobalConfig.Downloader.DlThreadCount
-	TaskPool = &Pool{
-		PoolSize:    tasks,
-		WaitQueue:   []func() error{},
-		PoolChannel: make(chan struct{}, tasks),
+	TaskPool, err = ants.NewPool(tasks, ants.WithOptions(commonAntsOptions()))
+	if err != nil {
+		err = errors.Wrap(err, "初始化下载任务协程池失败")
+		return
 	}
-	DownloadPool = &Pool{
-		PoolSize:    downloads,
-		WaitQueue:   []func() error{},
-		PoolChannel: make(chan struct{}, downloads),
+	DownloadPool, err = ants.NewPool(downloads, ants.WithOptions(commonAntsOptions()))
+	if err != nil {
+		err = errors.Wrap(err, "初始化下载协程池失败")
+		return
+	}
+	return
+}
+
+// 销毁所有的协程池
+func ReleaseAll() {
+	if TaskPool != nil {
+		TaskPool.Release()
+	}
+	if DownloadPool != nil {
+		DownloadPool.Release()
+	}
+}
+
+func commonAntsOptions() ants.Options {
+	return ants.Options{
+		ExpiryDuration:   time.Minute * 10, // worker 10 分钟没有任务处理就销毁
+		MaxBlockingTasks: 1024 * 1024,      // 最多可以有多少阻塞的任务
 	}
 }
