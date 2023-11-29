@@ -1,4 +1,4 @@
-package entity
+package meta
 
 import "video-downloader-go/internal/util/myhttp"
 
@@ -8,6 +8,7 @@ type Video struct {
 	Url  string // 视频地址
 }
 
+// Download 封装了一个视频下载任务所需要的元数据
 type Download struct {
 	Link      string            // 视频下载地址
 	FileName  string            // 视频名称
@@ -15,6 +16,7 @@ type Download struct {
 	HeaderMap map[string]string // 请求头
 }
 
+// NewMeta 用于创建一个默认的下载元数据
 func NewDownloadMeta(link, fileName, originUrl string) *Download {
 	dm := Download{Link: link, FileName: fileName, OriginUrl: originUrl}
 	m := myhttp.GenDefaultHeaderMapByUrl(nil, link)
