@@ -12,11 +12,11 @@ type Downloader interface {
 }
 
 // 初始化一个 mp4 单协程下载器
-func NewMp4SimpleDownloader() Downloader {
+func Mp4Simple() Downloader {
 	return &mp4SimpleDownloader{}
 }
 
 // 初始化一个 mp4 多协程下载器
-func NewMp4MultiThreadDownloader() Downloader {
+func Mp4MultiThread() Downloader {
 	return &mp4MultiThreadDownloader{}
 }
