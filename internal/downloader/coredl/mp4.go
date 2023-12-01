@@ -1,6 +1,7 @@
 package coredl
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"net/http"
@@ -37,9 +38,33 @@ func (d *mp4SimpleDownloader) Exec(meta *meta.Download, progressListener func(cu
 		return errors.Wrap(err, "无法获取文件总大小或文件为空")
 	}
 	total = ranges[1]
+	// 调用一次监听器，使得调用方可以获得文件的总大小
+	progressListener(current, total)
 	// 2 分片
 	tasks := initUnitTasks(total)
 	// 3 循环分片进行下载
+	defaultHeaders := myhttp.GenDefaultHeaderMapByUrl(nil, meta.Link)
+	// 构造请求，携带上分片头
+	req, err := http.NewRequest(http.MethodGet, meta.Link, nil)
+	if err != nil {
+		return errors.Wrapf(err, "构造请求时出现异常：%v", meta)
+	}
+	for k, v := range defaultHeaders {
+		req.Header.Add(k, v)
+	}
+	for _, task := range tasks {
+		newReq, err := myhttp.CloneHttpRequest(req)
+		if err != nil {
+			return errors.Wrapf(err, "克隆请求时出现异常：%v", meta)
+		}
+		newReq.Header.Set(myhttp.HttpHeaderRangesKey, fmt.Sprintf("bytes=%d-%d", task.from, task.to))
+		if err = myhttp.DownloadWithRateLimit(newReq, meta.FileName); err != nil {
+			return errors.Wrapf(err, "下载分片时出现异常：%v, %v", meta, task)
+		}
+		// 每下载完成一个分片就通知一次监听器
+		current += (task.to - task.from)
+		progressListener(current, total)
+	}
 	return nil
 }
 

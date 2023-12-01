@@ -2,7 +2,7 @@ package myhttp
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -90,7 +90,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 		consume := bucket.TryConsume(end - start)
 		if consume <= 0 {
 			// 抢不到令牌，睡眠一小会，防止过渡消耗系统资源
-			time.Sleep(time.Second / 10)
+			time.Sleep(time.Millisecond * 100)
 			continue
 		}
 		rangeHeader := fmt.Sprintf("bytes=%v-%v", start, start+consume)
@@ -118,7 +118,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 			util.PrintRetryError("响应体为空", nil, 2)
 			continue
 		}
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			util.PrintRetryError("读取数据异常", nil, 2)
 			continue
