@@ -92,14 +92,15 @@ func downloadMp4(dmt *meta.Download, progressListener func(current, total int64)
 	}
 	// 定义一个局部的协程同步器，为了把当前函数变为同步的
 	var wg sync.WaitGroup
-	// TODO: 看看能不能再细分出多协程和单协程的代码，现在有点乱
 	wg.Add(taskCount)
 	appctx.WaitGroup().Add(taskCount)
 	for _, task := range tasks {
 		if !multiThread {
 			if downloadTask(task); err != nil {
-				return err
+				return
 			}
+			wg.Done()
+			appctx.WaitGroup().Done()
 			continue
 		}
 		err = dlpool.Download.Submit(func() {
