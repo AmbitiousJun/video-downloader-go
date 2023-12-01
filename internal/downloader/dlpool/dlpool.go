@@ -1,6 +1,6 @@
 // 负责多协程处理下载任务
 
-package dlthreadpool
+package dlpool
 
 import (
 	"time"
@@ -11,10 +11,10 @@ import (
 )
 
 // 处理任务的线程池
-var TaskPool *ants.Pool
+var Task *ants.Pool
 
 // 处理下载任务的协程池
-var DownloadPool *ants.Pool
+var Download *ants.Pool
 
 // 从全局配置中初始化协程池
 func InitFromGlobalConfig() (err error) {
@@ -26,12 +26,12 @@ func InitFromGlobalConfig() (err error) {
 	}()
 	tasks := config.GlobalConfig.Downloader.TaskThreadCount
 	downloads := config.GlobalConfig.Downloader.DlThreadCount
-	TaskPool, err = ants.NewPool(tasks, ants.WithOptions(commonAntsOptions()))
+	Task, err = ants.NewPool(tasks, ants.WithOptions(commonAntsOptions()))
 	if err != nil {
 		err = errors.Wrap(err, "初始化下载任务协程池失败")
 		return
 	}
-	DownloadPool, err = ants.NewPool(downloads, ants.WithOptions(commonAntsOptions()))
+	Download, err = ants.NewPool(downloads, ants.WithOptions(commonAntsOptions()))
 	if err != nil {
 		err = errors.Wrap(err, "初始化下载协程池失败")
 		return
@@ -41,11 +41,11 @@ func InitFromGlobalConfig() (err error) {
 
 // 销毁所有的协程池
 func ReleaseAll() {
-	if TaskPool != nil {
-		TaskPool.Release()
+	if Task != nil {
+		Task.Release()
 	}
-	if DownloadPool != nil {
-		DownloadPool.Release()
+	if Download != nil {
+		Download.Release()
 	}
 }
 

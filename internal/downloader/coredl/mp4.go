@@ -5,7 +5,11 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"time"
+	"video-downloader-go/internal/appctx"
+	"video-downloader-go/internal/downloader/dlpool"
 	"video-downloader-go/internal/meta"
 	"video-downloader-go/internal/util/myhttp"
 	"video-downloader-go/internal/util/mymath"
@@ -30,10 +34,26 @@ type unitTask struct {
 }
 
 // 使用 mp4 单协程下载时，current 和 total 分别是已下载字节数和总字节数
-func (d *mp4SimpleDownloader) Exec(meta *meta.Download, progressListener func(current, total int64)) error {
+func (d *mp4SimpleDownloader) Exec(dmt *meta.Download, progressListener func(current, total int64)) error {
+	return downloadMp4(dmt, progressListener, false)
+}
+
+func (d *mp4MultiThreadDownloader) Exec(dmt *meta.Download, progressListener func(current, total int64)) error {
+	return downloadMp4(dmt, progressListener, true)
+}
+
+// downloadMp4 函数定义了核心的下载逻辑
+func downloadMp4(dmt *meta.Download, progressListener func(current, total int64), multiThread bool) (err error) {
+	var taskCount int
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprintf("下载时出现异常：%v, 请检查各项配置是否正确", r))
+			appctx.BatchDone(taskCount)
+		}
+	}()
 	var current, total int64 = 0, 0
 	// 1 获取文件总大小
-	ranges, err := myhttp.GetRequestRangesFrom(meta.Link, http.MethodGet, myhttp.GenDefaultHeaderMapByUrl(nil, meta.Link), 0)
+	ranges, err := myhttp.GetRequestRangesFrom(dmt.Link, http.MethodGet, myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link), 0)
 	if err != nil || ranges[1] <= 0 {
 		return errors.Wrap(err, "无法获取文件总大小或文件为空")
 	}
@@ -42,34 +62,67 @@ func (d *mp4SimpleDownloader) Exec(meta *meta.Download, progressListener func(cu
 	progressListener(current, total)
 	// 2 分片
 	tasks := initUnitTasks(total)
+	taskCount = len(tasks)
 	// 3 循环分片进行下载
-	defaultHeaders := myhttp.GenDefaultHeaderMapByUrl(nil, meta.Link)
+	defaultHeaders := myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link)
 	// 构造请求，携带上分片头
-	req, err := http.NewRequest(http.MethodGet, meta.Link, nil)
+	req, err := http.NewRequest(http.MethodGet, dmt.Link, nil)
 	if err != nil {
-		return errors.Wrapf(err, "构造请求时出现异常：%v", meta)
+		return errors.Wrapf(err, "构造请求时出现异常：%v", dmt)
 	}
 	for k, v := range defaultHeaders {
 		req.Header.Add(k, v)
 	}
-	for _, task := range tasks {
-		newReq, err := myhttp.CloneHttpRequest(req)
+	downloadTask := func(task *unitTask) {
+		// 使用主函数的 err 对象传递错误信息
+		var newReq *http.Request
+		newReq, err = myhttp.CloneHttpRequest(req)
 		if err != nil {
-			return errors.Wrapf(err, "克隆请求时出现异常：%v", meta)
+			err = errors.Wrapf(err, "克隆请求时出现异常：%v", dmt)
+			return
 		}
 		newReq.Header.Set(myhttp.HttpHeaderRangesKey, fmt.Sprintf("bytes=%d-%d", task.from, task.to))
-		if err = myhttp.DownloadWithRateLimit(newReq, meta.FileName); err != nil {
-			return errors.Wrapf(err, "下载分片时出现异常：%v, %v", meta, task)
+		if err = myhttp.DownloadWithRateLimit(newReq, dmt.FileName); err != nil {
+			err = errors.Wrapf(err, "下载分片时出现异常：%v, %v", dmt, task)
+			return
 		}
 		// 每下载完成一个分片就通知一次监听器
-		current += (task.to - task.from)
+		atomic.AddInt64(&current, task.to-task.from)
 		progressListener(current, total)
 	}
-	return nil
-}
-
-func (d *mp4MultiThreadDownloader) Exec(meta *meta.Download, progressListener func(current, total int64)) error {
-	return nil
+	// 定义一个局部的协程同步器，为了把当前函数变为同步的
+	var wg sync.WaitGroup
+	// TODO: 看看能不能再细分出多协程和单协程的代码，现在有点乱
+	wg.Add(taskCount)
+	appctx.WaitGroup().Add(taskCount)
+	for _, task := range tasks {
+		if !multiThread {
+			if downloadTask(task); err != nil {
+				return err
+			}
+			continue
+		}
+		err = dlpool.Download.Submit(func() {
+			defer appctx.WaitGroup().Done()
+			defer wg.Done()
+			select {
+			case <-appctx.Context().Done():
+				return
+			default:
+				if err != nil {
+					// 如果下载已经出错了，就没必要再下了
+					return
+				}
+				downloadTask(task)
+			}
+		})
+		if err != nil {
+			panic(errors.Wrap(err, "协程池运行异常"))
+		}
+	}
+	// 等待所有的协程运行完毕
+	wg.Wait()
+	return
 }
 
 // 初始化下载任务分片列表
@@ -82,9 +135,9 @@ func initUnitTasks(fileTotalSize int64) []*unitTask {
 	for ; i < SplitCount; i++ {
 		curSize := int64(mymath.Min(size, fileTotalSize-i*size))
 		from := i * curSize
-		rand.Seed(time.Now().UnixNano())
+		rd := rand.New(rand.NewSource(time.Now().UnixNano()))
 		for curSize > 2*baseSize {
-			random := int64(float64(baseSize) * rand.Float64())
+			random := int64(float64(baseSize) * rd.Float64())
 			to := from + baseSize + random
 			res = append(res, &unitTask{from: from, to: to})
 			curSize -= (baseSize + random)

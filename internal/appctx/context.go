@@ -35,3 +35,10 @@ func CancelFunc() context.CancelFunc {
 func Context() context.Context {
 	return ctx
 }
+
+// 批量完成任务
+func BatchDone(count int) {
+	for i := 0; i < count; i++ {
+		wg.Done()
+	}
+}
