@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
 )
@@ -49,7 +49,7 @@ func InitTempTsDir(filename string) (string, error) {
 	dirPath := fmt.Sprintf("%v_%v", filename, "temp_ts_dir")
 	_, err := os.Stat(dirPath)
 	if err == nil {
-		log.Warn("临时目录已存在：" + dirPath)
+		mylog.Warn("临时目录已存在：" + dirPath)
 		return dirPath, nil
 	}
 	err = os.MkdirAll(dirPath, fs.ModeDir)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
 )
@@ -115,6 +115,6 @@ func checkYtDlEnv() error {
 	if !strings.Contains(result, "Usage:") {
 		return errors.New("无法执行命令")
 	}
-	log.Success("检查 youtube-dl 环境成功")
+	mylog.Success("检查 youtube-dl 环境成功")
 	return nil
 }

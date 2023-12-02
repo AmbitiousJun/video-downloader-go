@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 	"video-downloader-go/internal/appctx"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mymath"
 )
 
@@ -105,7 +105,7 @@ func (tb *MyTokenBucket) autoCalcRateLimit() {
 		if strings.EqualFold(lastRateStr, rateStr) {
 			return
 		}
-		log.Warn(fmt.Sprintf("当前下载速率：%v MB/s", rateStr))
+		mylog.Warn(fmt.Sprintf("当前下载速率：%v MB/s", rateStr))
 		lastRateStr = rateStr
 		// 清空状态
 		tb.setTotalConsume(0)

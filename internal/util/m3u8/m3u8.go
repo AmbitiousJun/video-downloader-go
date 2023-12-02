@@ -12,8 +12,8 @@ import (
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/transfer"
 	"video-downloader-go/internal/util"
-	"video-downloader-go/internal/util/log"
 	"video-downloader-go/internal/util/myhttp"
+	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
 )
@@ -40,8 +40,8 @@ func CheckM3U8(url string, headers map[string]string) bool {
 		return false
 	}
 	for {
-		log.Info("正在解析 m3u8 信息...")
-		request, err := http.NewRequest("GET", url, nil)
+		mylog.Info("正在解析 m3u8 信息...")
+		request, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			util.PrintRetryError("构造请求失败", err, 2)
 			continue
@@ -90,7 +90,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 	stat, err := os.Stat(m3u8Url)
 	for err != nil || stat.IsDir() {
 		// 如果有错误，说明文件不存在，重复判断
-		log.Info("查找不到本地的 m3u8 文件：" + m3u8Url)
+		mylog.Info("查找不到本地的 m3u8 文件：" + m3u8Url)
 		time.Sleep(time.Second * 3)
 		stat, err = os.Stat(m3u8Url)
 	}
@@ -117,7 +117,7 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 	// 3 删除 m3u8 文件
 	err = os.Remove(m3u8Url)
 	if err != nil {
-		log.Warn("删除本地 m3u8 文件失败：" + err.Error())
+		mylog.Warn("删除本地 m3u8 文件失败：" + err.Error())
 	}
 	return ans, nil
 }
@@ -144,7 +144,7 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 	// 3 读取 m3u8 信息
 	client := myhttp.TimeoutHttpClient()
 	for {
-		req, err := http.NewRequest("GET", m3u8Url, nil)
+		req, err := http.NewRequest(http.MethodGet, m3u8Url, nil)
 		if err != nil {
 			util.PrintRetryError("构造请求时发生异常", err, 2)
 			continue
@@ -186,13 +186,13 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 func Merge(tsDirPath string) error {
 	dirName := filepath.Base(tsDirPath)
 	fileName := dirName[:len(dirName)-len(config.GlobalConfig.Downloader.TsDirSuffix)-1]
-	log.Info(fmt.Sprintf("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName))
+	mylog.Info(fmt.Sprintf("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName))
 	err := transfer.Instance().Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName)
 	if err != nil {
 		return errors.Wrap(err, "合并失败")
 	}
 	if err = os.RemoveAll(tsDirPath); err != nil {
-		log.Error(fmt.Sprintf("临时目录删除失败，目标视频：%s", fileName))
+		mylog.Error(fmt.Sprintf("临时目录删除失败，目标视频：%s", fileName))
 	}
 	return nil
 }

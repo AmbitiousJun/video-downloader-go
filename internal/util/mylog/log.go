@@ -1,8 +1,8 @@
 // 日志输出
-package log
+package mylog
 
 import (
-	sysLog "log"
+	"log"
 	"math"
 	"time"
 	"video-downloader-go/internal/appctx"
@@ -21,7 +21,7 @@ const (
 const logQueueMaxLength int = math.MaxInt32 / 2
 
 // 存放日志的队列
-var lq = &logQueue{}
+var lq = new(logQueue)
 
 // 日志阻塞标志
 var blockFlag = false
@@ -74,7 +74,7 @@ func printLog(li *logItem) {
 	if li == nil {
 		return
 	}
-	sysLog.Println(li.string)
+	log.Println(li.string)
 }
 
 // 输出当前队列中的所有日志

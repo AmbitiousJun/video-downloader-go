@@ -14,7 +14,7 @@ import (
 	"strings"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util/file"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mymath"
 
 	"github.com/pkg/errors"
@@ -124,7 +124,7 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 		return errors.Wrap(err, "合并最终视频文件失败")
 	}
 	if e, d := file.DeleteFileIfExist(tempTsFilePath); e && !d {
-		log.Warn("临时 ts 删除失败")
+		mylog.Warn("临时 ts 删除失败")
 	}
 	return nil
 }
@@ -140,10 +140,10 @@ func (ft *ffmpegTransfer) executeCmd(cmd *exec.Cmd) error {
 	}
 	scanner := bufio.NewScanner(out)
 	for scanner.Scan() {
-		log.Info(scanner.Text())
+		mylog.Info(scanner.Text())
 	}
 	if err = scanner.Err(); err != nil {
-		log.Error(fmt.Sprintf("输出命令执行日志异常：%v", err))
+		mylog.Error(fmt.Sprintf("输出命令执行日志异常：%v", err))
 	}
 	if err = cmd.Wait(); err != nil {
 		return errors.Wrap(err, "命令执行时出错")

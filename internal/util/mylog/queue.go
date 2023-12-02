@@ -1,5 +1,5 @@
-// 定义一个队列结构，用于全局控制日志
-package log
+// 定义一个协程安全的队列结构，用于全局控制日志
+package mylog
 
 import "sync"
 

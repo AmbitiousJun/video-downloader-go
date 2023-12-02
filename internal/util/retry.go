@@ -4,11 +4,11 @@ package util
 import (
 	"fmt"
 	"time"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 )
 
 // 输出重试错误
 func PrintRetryError(prefix string, err error, seconds time.Duration) {
-	log.Warn(fmt.Sprintf("%v：%v，%v 秒后重试", prefix, err.Error(), seconds))
+	mylog.Warn(fmt.Sprintf("%v：%v，%v 秒后重试", prefix, err.Error(), seconds))
 	time.Sleep(time.Second * seconds)
 }

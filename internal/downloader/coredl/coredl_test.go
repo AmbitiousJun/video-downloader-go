@@ -8,7 +8,7 @@ import (
 	"video-downloader-go/internal/downloader/coredl"
 	"video-downloader-go/internal/downloader/dlpool"
 	"video-downloader-go/internal/meta"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 )
 
 // 测试下载 MP4
@@ -22,7 +22,7 @@ func TestDownloadMp4(t *testing.T) {
 	dl := coredl.NewMp4MultiThread()
 	err := dl.Exec(dmt, func(current, total int64) {
 		percent := float64(current) / float64(total) * 100
-		log.Success(fmt.Sprintf("当前文件下载进度：%v/%v(%.2f%%)", current, total, percent))
+		mylog.Success(fmt.Sprintf("当前文件下载进度：%v/%v(%.2f%%)", current, total, percent))
 	})
 	if err != nil {
 		t.Error(err)

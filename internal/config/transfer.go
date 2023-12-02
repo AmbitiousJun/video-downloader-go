@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
 )
@@ -58,6 +58,6 @@ func checkFfmpegEnv() error {
 	if !strings.Contains(result, "usage: ffmpeg") {
 		return errors.New(fmt.Sprintf("检查 ffmpeg 环境失败：%v", result))
 	}
-	log.Success("检查 ffmpeg 环境成功")
+	mylog.Success("检查 ffmpeg 环境成功")
 	return nil
 }

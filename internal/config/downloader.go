@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"video-downloader-go/internal/util"
-	"video-downloader-go/internal/util/log"
+	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
 )
@@ -49,19 +49,19 @@ func checkDownloaderConfig() error {
 		return errors.New("下载目录不能为空")
 	}
 	if strings.TrimSpace(cfg.Use) == "" || !downloadTypeValid(cfg.Use) {
-		log.Warn("没有配置下载类型或配置错误，默认使用多线程下载")
+		mylog.Warn("没有配置下载类型或配置错误，默认使用多线程下载")
 		cfg.Use = DownloadMultiThread
 	}
 	if cfg.TaskThreadCount <= 0 {
-		log.Warn("没有配置下载任务处理线程数或配置错误，使用默认值：2")
+		mylog.Warn("没有配置下载任务处理线程数或配置错误，使用默认值：2")
 		cfg.TaskThreadCount = 2
 	}
 	if cfg.DlThreadCount <= 0 {
-		log.Warn("没有配置下载线程数或配置错误，使用默认值：32")
+		mylog.Warn("没有配置下载线程数或配置错误，使用默认值：32")
 		cfg.DlThreadCount = 32
 	}
 	if strings.TrimSpace(cfg.TsDirSuffix) == "" {
-		log.Warn("没有配置临时 ts 目录后缀或配置错误，使用默认值：temp_ts_files")
+		mylog.Warn("没有配置临时 ts 目录后缀或配置错误，使用默认值：temp_ts_files")
 		cfg.TsDirSuffix = "temp_ts_files"
 	}
 	// 默认速率是 5mbps
@@ -77,7 +77,7 @@ func checkDownloaderConfig() error {
 			if err != nil {
 				return errors.Wrap(err, "检查下载器配置时出现异常")
 			}
-			log.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, kbps))
+			mylog.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, kbps))
 			rate *= 1024
 		} else if strings.HasSuffix(cfg.RateLimit, mbps) {
 			val := cfg.RateLimit[:len(cfg.RateLimit)-len(mbps)]
@@ -85,10 +85,10 @@ func checkDownloaderConfig() error {
 			if err != nil {
 				return errors.Wrap(err, "检查下载器配置时出现异常")
 			}
-			log.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, mbps))
+			mylog.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, mbps))
 			rate *= 1024 * 1024
 		} else {
-			log.Warn("没有配置限速或者配置出错，启用默认的速率限制：5mbps")
+			mylog.Warn("没有配置限速或者配置出错，启用默认的速率限制：5mbps")
 		}
 	}
 	// 初始化令牌桶
