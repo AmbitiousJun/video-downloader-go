@@ -99,7 +99,7 @@ func (tb *MyTokenBucket) autoCalcRateLimit() {
 		// 计算出 MB/s 单位速率
 		var rate float64 = 0
 		if tb.totalConsume != 0 {
-			rate = rate * float64(milliUnit) / float64(unit) / float64(unit) / float64(milli)
+			rate = float64(tb.totalConsume) * float64(milliUnit) / float64(unit) / float64(unit) / float64(milli)
 		}
 		rateStr := fmt.Sprintf("%.1f", rate)
 		if strings.EqualFold(lastRateStr, rateStr) {
