@@ -12,6 +12,16 @@ type Downloader interface {
 // processHandler 可以使调用方实时获取下载进度
 type processHandler func(current, total int64)
 
+// 初始化一个 m3u8 单协程下载器
+func NewM3U8Simple() Downloader {
+	return new(m3u8SimpleDownloader)
+}
+
+// 初始化一个 m3u8 多协程下载器
+func NewM3U8MultiThread() Downloader {
+	return new(m3u8MultiThreadDownloader)
+}
+
 // 初始化一个 mp4 单协程下载器
 func NewMp4Simple() Downloader {
 	return new(mp4SimpleDownloader)

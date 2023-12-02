@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"video-downloader-go/internal/config"
-	"video-downloader-go/internal/util/file"
+	"video-downloader-go/internal/util/myfile"
 	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mymath"
 
@@ -71,10 +71,10 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string) error {
 func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, outputPath string) error {
 	tempTsFilePath := fmt.Sprintf("%s/ts_%d.ts", tsDir, math.MaxInt32)
 	tempDestFilePath := strings.Replace(outputPath, ".mp4", ".ts", -1)
-	if e, d := file.DeleteFileIfExist(tempTsFilePath); e && !d {
+	if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
 		return errors.New("无法删除临时文件：" + tempTsFilePath)
 	}
-	if e, d := file.DeleteFileIfExist(tempDestFilePath); e && !d {
+	if e, d := myfile.DeleteFileIfExist(tempDestFilePath); e && !d {
 		return errors.New("无法删除临时文件：" + tempDestFilePath)
 	}
 	// 遍历列表合成
@@ -84,7 +84,7 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 		handleSize := int(mymath.Min(50, int64(size-current)))
 		concatBuilder := &strings.Builder{}
 		concatBuilder.WriteString("concat:")
-		if file.FileExist(tempTsFilePath) {
+		if myfile.FileExist(tempTsFilePath) {
 			concatBuilder.WriteString(tempTsFilePath)
 		}
 		for i := 0; i < handleSize; i++ {
@@ -93,7 +93,7 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 				// 不处理临时 ts 文件
 				continue
 			}
-			if i != 0 || file.FileExist(tempTsFilePath) {
+			if i != 0 || myfile.FileExist(tempTsFilePath) {
 				// 非首次合并，需要 |
 				concatBuilder.WriteString("|")
 			}
@@ -106,24 +106,24 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 		if err != nil {
 			return errors.Wrap(err, "执行 ffmpeg 合并命令失败")
 		}
-		if e, d := file.DeleteFileIfExist(tempTsFilePath); e && !d {
+		if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
 			return errors.New("无法删除临时文件：" + tempTsFilePath)
 		}
-		if file.FileExist(tempDestFilePath) {
+		if myfile.FileExist(tempDestFilePath) {
 			if err = os.Rename(tempDestFilePath, tempTsFilePath); err != nil {
 				return errors.Wrap(err, "临时文件拷贝异常："+tempDestFilePath)
 			}
 		}
 	}
 	// 全部转换完成后，生成最终文件
-	if !file.FileExist(tempTsFilePath) {
+	if !myfile.FileExist(tempTsFilePath) {
 		return errors.New("检测不到最终的 ts 文件")
 	}
 	cmd := exec.Command(config.FfmpegPath, "-i", "concat:"+tempTsFilePath, "-c", "copy", outputPath)
 	if err := ft.executeCmd(cmd); err != nil {
 		return errors.Wrap(err, "合并最终视频文件失败")
 	}
-	if e, d := file.DeleteFileIfExist(tempTsFilePath); e && !d {
+	if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
 		mylog.Warn("临时 ts 删除失败")
 	}
 	return nil

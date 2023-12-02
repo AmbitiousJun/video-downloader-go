@@ -1,22 +1,22 @@
-package file_test
+package myfile_test
 
 import (
 	"fmt"
 	"testing"
-	"video-downloader-go/internal/util/file"
+	"video-downloader-go/internal/util/myfile"
 )
 
 func TestDeleteDir(t *testing.T) {
 	path := "c:/Users/Ambitious/Downloads/1.mp4_ts_dir"
-	success := file.DeleteDir(path)
-	if !success {
-		t.Error("删除目录失败")
+	err := myfile.DeleteDir(path)
+	if err != nil {
+		t.Error("删除目录失败", err)
 	}
 }
 
 func TestInitFileDir(t *testing.T) {
 	path := "/Users/ambitious/Downloads/test/1.txt"
-	err := file.InitFileDirs(path)
+	err := myfile.InitFileDirs(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestInitFileDir(t *testing.T) {
 
 func TestInitTempTsDir(t *testing.T) {
 	path := "c:/Users/Ambitious/Downloads/1.mp4"
-	dirPath, err := file.InitTempTsDir(path)
+	dirPath, err := myfile.InitTempTsDir(path, "temp_ts_dir")
 	if err != nil {
 		t.Error(err)
 	}

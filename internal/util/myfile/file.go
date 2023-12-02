@@ -1,4 +1,4 @@
-package file
+package myfile
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func FileExist(filePath string) bool {
 }
 
 // 删除文件，如果存在
-// @return: 第一个参数表示文件是否存在，第二个参数表示删除是否成功
+// @return 第一个参数表示文件是否存在，第二个参数表示删除是否成功
 func DeleteFileIfExist(filePath string) (bool, bool) {
 	if !FileExist(filePath) {
 		return false, false
@@ -32,27 +32,27 @@ func DeleteFileIfExist(filePath string) (bool, bool) {
 // 删除目录
 // @param dirPath 要删除目录的绝对路径
 // @return 是否删除成功
-func DeleteDir(dirPath string) bool {
+func DeleteDir(dirPath string) error {
 	fileInfo, err := os.Stat(dirPath)
 	if err != nil || !fileInfo.IsDir() {
 		// 没有这个目录，或者不是目录
-		return false
+		return errors.New("目录不存在或不是目录")
 	}
-	err = os.RemoveAll(dirPath)
-	return err == nil
+	return os.RemoveAll(dirPath)
 }
 
 // 生成一个用于下载 ts 文件的临时目录
 // @param filename 文件名称
+// @param suffix 临时目录后缀
 // @return 生成的临时目录绝对路径
-func InitTempTsDir(filename string) (string, error) {
-	dirPath := fmt.Sprintf("%v_%v", filename, "temp_ts_dir")
+func InitTempTsDir(filename, suffix string) (string, error) {
+	dirPath := fmt.Sprintf("%v_%v", filename, suffix)
 	_, err := os.Stat(dirPath)
 	if err == nil {
 		mylog.Warn("临时目录已存在：" + dirPath)
 		return dirPath, nil
 	}
-	err = os.MkdirAll(dirPath, fs.ModeDir)
+	err = os.MkdirAll(dirPath, fs.ModePerm|fs.ModeDir)
 	if err != nil {
 		return "", errors.Wrap(err, "创建临时目录失败")
 	}

@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 	"strings"
-	"video-downloader-go/internal/util/file"
+	"video-downloader-go/internal/util/myfile"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -81,7 +81,7 @@ func checkPath(path string) (string, error) {
 	validExtensions := []string{"", ".exe", ".sh", ".cmd"}
 	for _, ext := range validExtensions {
 		newPath := path + ext
-		if file.FileExist(newPath) {
+		if myfile.FileExist(newPath) {
 			return newPath, nil
 		}
 	}

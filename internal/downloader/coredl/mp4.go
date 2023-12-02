@@ -1,3 +1,4 @@
+// mp4 视频下载
 package coredl
 
 import (
@@ -34,7 +35,6 @@ type unitTask struct {
 	to   int64 // 终止字节（开）
 }
 
-// 使用 mp4 单协程下载时，current 和 total 分别是已下载字节数和总字节数
 func (d *mp4SimpleDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
 	return downloadMp4(dmt, handlerFunc, false)
 }
@@ -48,10 +48,17 @@ func downloadMp4(dmt *meta.Download, handlerFunc processHandler, multiThread boo
 	var current, total int64 = 0, 0
 	// 1 获取文件总大小
 	ranges, err := myhttp.GetRequestRangesFrom(dmt.Link, http.MethodGet, myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link), 0)
-	if err != nil || ranges[1] <= 0 {
-		return errors.Wrap(err, "无法获取文件总大小或文件为空")
+	if err != nil {
+		if util.IsRetryableError(err) {
+			time.Sleep(time.Second * 2)
+			return downloadMp4(dmt, handlerFunc, multiThread)
+		}
+		return errors.Wrap(err, "无法获取文件总大小")
 	}
 	total = ranges[1]
+	if total <= 0 {
+		return errors.New("空文件，停止下载")
+	}
 	// 调用一次监听器，使得调用方可以获得文件的总大小
 	handlerFunc(current, total)
 	// 2 分片
@@ -67,16 +74,20 @@ func downloadMp4(dmt *meta.Download, handlerFunc processHandler, multiThread boo
 		req.Header.Add(k, v)
 	}
 	downloadTask := func(task *unitTask) {
+		var tmpErr error
+		defer func() {
+			err = util.AnyError(err, tmpErr)
+		}()
 		// 使用主函数的 err 对象传递错误信息
 		var newReq *http.Request
-		newReq, err = myhttp.CloneHttpRequest(req)
-		if err != nil {
-			err = errors.Wrapf(err, "克隆请求时出现异常：%v", dmt)
+		newReq, tmpErr = myhttp.CloneHttpRequest(req)
+		if tmpErr != nil {
+			tmpErr = errors.Wrapf(tmpErr, "克隆请求时出现异常：%v", dmt)
 			return
 		}
 		newReq.Header.Set(myhttp.HttpHeaderRangesKey, fmt.Sprintf("bytes=%d-%d", task.from, task.to))
-		if err = myhttp.DownloadWithRateLimit(newReq, dmt.FileName); err != nil {
-			err = errors.Wrapf(err, "下载分片时出现异常：%v, %v", dmt, task)
+		if tmpErr = myhttp.DownloadWithRateLimit(newReq, dmt.FileName); tmpErr != nil {
+			tmpErr = errors.Wrapf(tmpErr, "下载分片时出现异常：%v, %v", dmt, task)
 			return
 		}
 		// 每下载完成一个分片就通知一次监听器

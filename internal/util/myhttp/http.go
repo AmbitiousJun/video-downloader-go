@@ -74,6 +74,9 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 	// 1 预请求，获取要下载文件的总大小
 	ranges, err := GetRequestRanges(url, method, headers)
 	if err != nil {
+		if util.IsRetryableError(err) {
+			return DownloadWithRateLimit(request, destPath)
+		}
 		return errors.Wrap(err, "获取文件下载范围失败")
 	}
 	RemoveRangeHeader(headers)
@@ -211,7 +214,7 @@ func GetRequestRangesFrom(url, method string, headers map[string]string, from in
 	}
 	resp, err := TimeoutHttpClient().Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "请求失败")
+		return nil, errors.Wrap(err, util.NetworkError)
 	}
 	defer resp.Body.Close()
 	if !Is2xxSuccess(resp.StatusCode) {

@@ -194,5 +194,6 @@ func Merge(tsDirPath string) error {
 	if err = os.RemoveAll(tsDirPath); err != nil {
 		mylog.Error(fmt.Sprintf("临时目录删除失败，目标视频：%s", fileName))
 	}
+	mylog.Success(fmt.Sprintf("合并完成，目标视频：%s", fileName))
 	return nil
 }
