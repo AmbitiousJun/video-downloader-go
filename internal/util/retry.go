@@ -14,7 +14,7 @@ var retryableErrors = map[string]struct{}{
 
 // 判断是否是可重试异常
 func IsRetryableError(err error) bool {
-	for e, _ := range retryableErrors {
+	for e := range retryableErrors {
 		if strings.Contains(err.Error(), e) {
 			return true
 		}
