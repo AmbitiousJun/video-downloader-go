@@ -2,21 +2,22 @@
 
 package coredl
 
-import (
-	"video-downloader-go/internal/meta"
-)
+import "video-downloader-go/internal/meta"
 
 type Downloader interface {
-	// Exec 是下载器的核心处理函数，传入下载元数据和一个进度监听器进行下载
-	Exec(dmt *meta.Download, progressListener func(current, total int64)) error
+	// Exec 是下载器的核心处理方法
+	Exec(dmt *meta.Download, handlerFunc processHandler) error
 }
 
+// processHandler 可以使调用方实时获取下载进度
+type processHandler func(current, total int64)
+
 // 初始化一个 mp4 单协程下载器
-func NewMp4SimpleDownloader() Downloader {
+func NewMp4Simple() Downloader {
 	return new(mp4SimpleDownloader)
 }
 
 // 初始化一个 mp4 多协程下载器
-func NewMp4MultiThreadDownloader() Downloader {
+func NewMp4MultiThread() Downloader {
 	return new(mp4MultiThreadDownloader)
 }

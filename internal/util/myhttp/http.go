@@ -237,7 +237,7 @@ func GetRequestRanges(url, method string, headers map[string]string) ([]int64, e
 		return nil, errors.New("url 和 headers 必传")
 	}
 	if len(method) == 0 {
-		method = "GET"
+		method = http.MethodGet
 	}
 	ranges, ok := headers[HttpHeaderRangesKey]
 	if !ok {

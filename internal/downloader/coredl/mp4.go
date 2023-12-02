@@ -11,6 +11,7 @@ import (
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/downloader/dlpool"
 	"video-downloader-go/internal/meta"
+	"video-downloader-go/internal/util"
 	"video-downloader-go/internal/util/myhttp"
 	"video-downloader-go/internal/util/mymath"
 
@@ -34,23 +35,16 @@ type unitTask struct {
 }
 
 // 使用 mp4 单协程下载时，current 和 total 分别是已下载字节数和总字节数
-func (d *mp4SimpleDownloader) Exec(dmt *meta.Download, progressListener func(current, total int64)) error {
-	return downloadMp4(dmt, progressListener, false)
+func (d *mp4SimpleDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
+	return downloadMp4(dmt, handlerFunc, false)
 }
 
-func (d *mp4MultiThreadDownloader) Exec(dmt *meta.Download, progressListener func(current, total int64)) error {
-	return downloadMp4(dmt, progressListener, true)
+func (d *mp4MultiThreadDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
+	return downloadMp4(dmt, handlerFunc, true)
 }
 
 // downloadMp4 函数定义了核心的下载逻辑
-func downloadMp4(dmt *meta.Download, progressListener func(current, total int64), multiThread bool) (err error) {
-	var taskCount int
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New(fmt.Sprintf("下载时出现异常：%v, 请检查各项配置是否正确", r))
-			appctx.BatchDone(taskCount)
-		}
-	}()
+func downloadMp4(dmt *meta.Download, handlerFunc processHandler, multiThread bool) (err error) {
 	var current, total int64 = 0, 0
 	// 1 获取文件总大小
 	ranges, err := myhttp.GetRequestRangesFrom(dmt.Link, http.MethodGet, myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link), 0)
@@ -59,10 +53,9 @@ func downloadMp4(dmt *meta.Download, progressListener func(current, total int64)
 	}
 	total = ranges[1]
 	// 调用一次监听器，使得调用方可以获得文件的总大小
-	progressListener(current, total)
+	handlerFunc(current, total)
 	// 2 分片
 	tasks := initUnitTasks(total)
-	taskCount = len(tasks)
 	// 3 循环分片进行下载
 	defaultHeaders := myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link)
 	// 构造请求，携带上分片头
@@ -88,40 +81,62 @@ func downloadMp4(dmt *meta.Download, progressListener func(current, total int64)
 		}
 		// 每下载完成一个分片就通知一次监听器
 		atomic.AddInt64(&current, task.to-task.from)
-		progressListener(current, total)
+		handlerFunc(current, total)
 	}
-	// 定义一个局部的协程同步器，为了把当前函数变为同步的
+	if multiThread {
+		err = util.AnyError(err, handleTasksMultiThread(tasks, downloadTask))
+	} else {
+		handleTasksSimple(tasks, downloadTask)
+	}
+	return
+}
+
+// 单协程处理任务列表
+func handleTasksSimple(tasks []*unitTask, downloadTaskFunc func(*unitTask)) {
+	if len(tasks) == 0 {
+		return
+	}
+	for _, task := range tasks {
+		downloadTaskFunc(task)
+	}
+}
+
+// 多协程处理任务列表
+func handleTasksMultiThread(tasks []*unitTask, downloadTaskFunc func(*unitTask)) (err error) {
+	if len(tasks) == 0 {
+		return
+	}
+	taskCount := len(tasks)
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprintf("下载时出现异常：%v, 请检查各项配置是否正确", r))
+			appctx.BatchDone(taskCount)
+		}
+	}()
+	// 协程同步器，下载是多协程下载，但是函数仍然是同步执行完成的
 	var wg sync.WaitGroup
 	wg.Add(taskCount)
 	appctx.WaitGroup().Add(taskCount)
 	for _, task := range tasks {
-		if !multiThread {
-			if downloadTask(task); err != nil {
-				return
-			}
-			wg.Done()
-			appctx.WaitGroup().Done()
-			continue
-		}
+		// 在 for-range 结构中使用多协程时需要拷贝指针
+		copyTask := task
 		err = dlpool.Download.Submit(func() {
-			defer appctx.WaitGroup().Done()
 			defer wg.Done()
+			defer appctx.WaitGroup().Done()
 			select {
 			case <-appctx.Context().Done():
 				return
 			default:
-				if err != nil {
-					// 如果下载已经出错了，就没必要再下了
-					return
+				if err == nil {
+					downloadTaskFunc(copyTask)
 				}
-				downloadTask(task)
 			}
 		})
 		if err != nil {
 			panic(errors.Wrap(err, "协程池运行异常"))
 		}
 	}
-	// 等待所有的协程运行完毕
+	// 阻塞等待所有协程运行完毕
 	wg.Wait()
 	return
 }
