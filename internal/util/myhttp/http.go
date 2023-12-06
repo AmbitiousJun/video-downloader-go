@@ -133,7 +133,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) (int64, error
 		bucket.CompleteConsume(consume)
 		resp.Body.Close()
 	}
-	return end - start, nil
+	return ranges[1] - ranges[0], nil
 }
 
 // 克隆 http 请求对象
