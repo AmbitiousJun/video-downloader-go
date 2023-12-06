@@ -23,10 +23,11 @@ func TestDownloadWithRateLimit(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = myhttp.DownloadWithRateLimit(req, "C:/Users/Ambitious/Downloads/1.mp4")
+	dn, err := myhttp.DownloadWithRateLimit(req, "C:/Users/Ambitious/Downloads/1.mp4")
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println("下载总大小：", dn, "bytes")
 }
 
 func TestGetRequestRanges(t *testing.T) {

@@ -29,17 +29,17 @@ type m3u8SimpleDownloader struct{}
 // m3u8 多协程下载器
 type m3u8MultiThreadDownloader struct{}
 
-func (d *m3u8SimpleDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
+func (d *m3u8SimpleDownloader) Exec(dmt *meta.Download, handlerFunc ProgressHandler) error {
 	return downloadM3U8(dmt, handlerFunc, false)
 }
 
-func (d *m3u8MultiThreadDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
+func (d *m3u8MultiThreadDownloader) Exec(dmt *meta.Download, handlerFunc ProgressHandler) error {
 	return downloadM3U8(dmt, handlerFunc, true)
 }
 
 // 下载 m3u8 视频的核心逻辑
-func downloadM3U8(dmt *meta.Download, handlerFunc processHandler, multiThread bool) error {
-	var current, total int64 = 0, 0
+func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bool) error {
+	var current, total, currentBytes int64
 	// 1 读取 ts 文件
 	dmt.HeaderMap = myhttp.GenDefaultHeaderMapByUrl(dmt.HeaderMap, dmt.Link)
 	tsMetas, err := m3u8.ReadTsUrls(dmt.Link, dmt.HeaderMap)
@@ -50,7 +50,12 @@ func downloadM3U8(dmt *meta.Download, handlerFunc processHandler, multiThread bo
 	if total == 0 {
 		return errors.New("读取到空 m3u8，下载任务终止")
 	}
-	handlerFunc(current, total)
+	handlerFunc(&Progress{
+		Current:      current,
+		Total:        total,
+		CurrentBytes: currentBytes,
+		TotalBytes:   currentBytes,
+	})
 	// 2 初始化临时文件夹
 	tempDirPath, err := myfile.InitTempTsDir(dmt.FileName, config.GlobalConfig.Downloader.TsDirSuffix)
 	if err != nil {
@@ -73,13 +78,20 @@ func downloadM3U8(dmt *meta.Download, handlerFunc processHandler, multiThread bo
 		for k, v := range dmt.HeaderMap {
 			req.Header.Add(k, v)
 		}
-		if tmpErr = myhttp.DownloadWithRateLimit(req, tsPath); tmpErr != nil {
+		var dn int64
+		if dn, tmpErr = myhttp.DownloadWithRateLimit(req, tsPath); tmpErr != nil {
 			tmpErr = errors.Wrapf(tmpErr, "分片下载异常：%v", dmt.FileName)
 			return
 		}
 		// 每个分片下载完成的时候调用进度监听器
 		atomic.AddInt64(&current, 1)
-		handlerFunc(current, total)
+		atomic.AddInt64(&currentBytes, dn)
+		handlerFunc(&Progress{
+			Current:      current,
+			Total:        total,
+			CurrentBytes: currentBytes,
+			TotalBytes:   currentBytes,
+		})
 	}
 	if multiThread {
 		err = util.AnyError(err, handleTsMetasMultiThread(tsMetas, downloadTsMeta))

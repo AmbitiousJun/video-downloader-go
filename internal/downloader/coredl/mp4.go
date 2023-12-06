@@ -35,17 +35,17 @@ type unitTask struct {
 	to   int64 // 终止字节（开）
 }
 
-func (d *mp4SimpleDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
+func (d *mp4SimpleDownloader) Exec(dmt *meta.Download, handlerFunc ProgressHandler) error {
 	return downloadMp4(dmt, handlerFunc, false)
 }
 
-func (d *mp4MultiThreadDownloader) Exec(dmt *meta.Download, handlerFunc processHandler) error {
+func (d *mp4MultiThreadDownloader) Exec(dmt *meta.Download, handlerFunc ProgressHandler) error {
 	return downloadMp4(dmt, handlerFunc, true)
 }
 
 // downloadMp4 函数定义了核心的下载逻辑
-func downloadMp4(dmt *meta.Download, handlerFunc processHandler, multiThread bool) (err error) {
-	var current, total int64 = 0, 0
+func downloadMp4(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bool) (err error) {
+	var current, total, currentBytes, totalBytes int64
 	// 1 获取文件总大小
 	ranges, err := myhttp.GetRequestRangesFrom(dmt.Link, http.MethodGet, myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link), 0)
 	if err != nil {
@@ -55,14 +55,20 @@ func downloadMp4(dmt *meta.Download, handlerFunc processHandler, multiThread boo
 		}
 		return errors.Wrap(err, "无法获取文件总大小")
 	}
-	total = ranges[1]
+	totalBytes = ranges[1]
 	if total <= 0 {
 		return errors.New("空文件，停止下载")
 	}
-	// 调用一次监听器，使得调用方可以获得文件的总大小
-	handlerFunc(current, total)
 	// 2 分片
 	tasks := initUnitTasks(total)
+	total = int64(len(tasks))
+	// 调用一次监听器，使得调用方可以获得文件的总大小
+	handlerFunc(&Progress{
+		Current:      current,
+		Total:        total,
+		CurrentBytes: currentBytes,
+		TotalBytes:   totalBytes,
+	})
 	// 3 循环分片进行下载
 	defaultHeaders := myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link)
 	// 构造请求，携带上分片头
@@ -86,13 +92,20 @@ func downloadMp4(dmt *meta.Download, handlerFunc processHandler, multiThread boo
 			return
 		}
 		newReq.Header.Set(myhttp.HttpHeaderRangesKey, fmt.Sprintf("bytes=%d-%d", task.from, task.to))
-		if tmpErr = myhttp.DownloadWithRateLimit(newReq, dmt.FileName); tmpErr != nil {
+		var dn int64
+		if dn, tmpErr = myhttp.DownloadWithRateLimit(newReq, dmt.FileName); tmpErr != nil {
 			tmpErr = errors.Wrapf(tmpErr, "下载分片时出现异常：%v, %v", dmt, task)
 			return
 		}
 		// 每下载完成一个分片就通知一次监听器
-		atomic.AddInt64(&current, task.to-task.from)
-		handlerFunc(current, total)
+		atomic.AddInt64(&current, 1)
+		atomic.AddInt64(&currentBytes, dn)
+		handlerFunc(&Progress{
+			Current:      current,
+			Total:        total,
+			CurrentBytes: currentBytes,
+			TotalBytes:   totalBytes,
+		})
 	}
 	if multiThread {
 		err = util.AnyError(err, handleTasksMultiThread(tasks, downloadTask))

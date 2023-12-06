@@ -66,8 +66,8 @@ var TimeoutHttpClient = (func() func() *http.Client {
 // 下载一个网络资源到本地的文件上，并进行网络限速
 // @param request 构造好的请求对象
 // @param destPath 要下载到本地文件的绝对路径
-// @return 下载错误
-func DownloadWithRateLimit(request *http.Request, destPath string) error {
+// @return 下载成功时，返回下载的字节数，下载失败则返回错误
+func DownloadWithRateLimit(request *http.Request, destPath string) (int64, error) {
 	url := request.URL.String()
 	method := request.Method
 	headers := HttpHeader2Map(request.Header.Clone())
@@ -77,7 +77,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 		if util.IsRetryableError(err) {
 			return DownloadWithRateLimit(request, destPath)
 		}
-		return errors.Wrap(err, "获取文件下载范围失败")
+		return -1, errors.Wrap(err, "获取文件下载范围失败")
 	}
 	RemoveRangeHeader(headers)
 	start, end := ranges[0], ranges[1]
@@ -86,7 +86,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 	client := TimeoutHttpClient()
 	dest, err := os.OpenFile(destPath, os.O_RDWR|os.O_CREATE, 0777)
 	if err != nil {
-		return errors.Wrapf(err, "无法打开或创建目标文件：%s", destPath)
+		return -1, errors.Wrapf(err, "无法打开或创建目标文件：%s", destPath)
 	}
 	defer dest.Close()
 	for start < end {
@@ -112,7 +112,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 		code := resp.StatusCode
 		if !Is2xxSuccess(code) {
 			if code == 416 {
-				return errors.New("检测到 416 错误码")
+				return -1, errors.New("检测到 416 错误码")
 			}
 			util.PrintRetryError(fmt.Sprintf("错误码：%v", code), nil, 2)
 			continue
@@ -133,7 +133,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) error {
 		bucket.CompleteConsume(consume)
 		resp.Body.Close()
 	}
-	return nil
+	return end - start, nil
 }
 
 // 克隆 http 请求对象
