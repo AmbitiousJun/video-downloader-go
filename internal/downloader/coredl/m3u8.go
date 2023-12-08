@@ -120,23 +120,16 @@ func handleTsMetasSimple(tsMetas []*m3u8.TsMeta, downloadFunc func(*m3u8.TsMeta)
 
 // 多协程下载 ts 文件
 func handleTsMetasMultiThread(tsMetas []*m3u8.TsMeta, downloadFunc func(*m3u8.TsMeta)) (err error) {
-	cnt := len(tsMetas)
-	if cnt == 0 {
+	if len(tsMetas) == 0 {
 		return nil
 	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New(fmt.Sprintf("下载时出现异常：%v, 请检查各项配置是否正确", r))
-			appctx.BatchDone(cnt)
-		}
-	}()
 	// 协程同步器用于同步多协程下载
 	var wg sync.WaitGroup
-	wg.Add(cnt)
-	appctx.WaitGroup().Add(cnt)
 	for _, tmt := range tsMetas {
 		copyMt := tmt
-		err = dlpool.Download.Submit(func() {
+		wg.Add(1)
+		err = dlpool.SubmitDownload(func() {
+			appctx.WaitGroup().Add(1)
 			defer wg.Done()
 			defer appctx.WaitGroup().Done()
 			select {
@@ -149,7 +142,7 @@ func handleTsMetasMultiThread(tsMetas []*m3u8.TsMeta, downloadFunc func(*m3u8.Ts
 			}
 		})
 		if err != nil {
-			panic(errors.Wrap(err, "协程池运行异常"))
+			return errors.Wrap(err, "协程池异常，请检查配置")
 		}
 	}
 	// 等待所有协程运行完毕

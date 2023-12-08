@@ -22,7 +22,7 @@ type MyTokenBucket struct {
 }
 
 const (
-	MaxConsumeTokens = 128 * 1024 // 每次最多消耗掉 128KB 的令牌
+	MaxConsumeTokens = 512 * 1024 // 每次最多消耗掉的令牌
 )
 
 // 创建一个令牌桶对象

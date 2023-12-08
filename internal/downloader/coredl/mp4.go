@@ -56,11 +56,11 @@ func downloadMp4(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bo
 		return errors.Wrap(err, "无法获取文件总大小")
 	}
 	totalBytes = ranges[1]
-	if total <= 0 {
+	if totalBytes <= 0 {
 		return errors.New("空文件，停止下载")
 	}
 	// 2 分片
-	tasks := initUnitTasks(total)
+	tasks := initUnitTasks(totalBytes)
 	total = int64(len(tasks))
 	// 调用一次监听器，使得调用方可以获得文件的总大小
 	handlerFunc(&Progress{
@@ -130,21 +130,14 @@ func handleTasksMultiThread(tasks []*unitTask, downloadTaskFunc func(*unitTask))
 	if len(tasks) == 0 {
 		return
 	}
-	taskCount := len(tasks)
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New(fmt.Sprintf("下载时出现异常：%v, 请检查各项配置是否正确", r))
-			appctx.BatchDone(taskCount)
-		}
-	}()
 	// 协程同步器，下载是多协程下载，但是函数仍然是同步执行完成的
 	var wg sync.WaitGroup
-	wg.Add(taskCount)
-	appctx.WaitGroup().Add(taskCount)
 	for _, task := range tasks {
 		// 在 for-range 结构中使用多协程时需要拷贝指针
 		copyTask := task
-		err = dlpool.Download.Submit(func() {
+		wg.Add(1)
+		err = dlpool.SubmitDownload(func() {
+			appctx.WaitGroup().Add(1)
 			defer wg.Done()
 			defer appctx.WaitGroup().Done()
 			select {
@@ -157,7 +150,7 @@ func handleTasksMultiThread(tasks []*unitTask, downloadTaskFunc func(*unitTask))
 			}
 		})
 		if err != nil {
-			panic(errors.Wrap(err, "协程池运行异常"))
+			return errors.Wrap(err, "协程池运行异常，请检查配置")
 		}
 	}
 	// 阻塞等待所有协程运行完毕

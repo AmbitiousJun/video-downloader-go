@@ -48,8 +48,7 @@ func doListen(list *meta.TaskDeque[meta.Download], completeOne DownloadListener,
 			time.Sleep(time.Second * 2)
 		}
 		dmt := list.PollFirst()
-		// TODO：增加协程池判空校验
-		dlpool.Task.Submit(func() {
+		dlpool.SubmitTask(func() {
 			appctx.WaitGroup().Add(1)
 			defer appctx.WaitGroup().Done()
 			originFilename := dmt.FileName
