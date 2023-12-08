@@ -16,7 +16,7 @@ type Download struct {
 	HeaderMap map[string]string // 请求头
 }
 
-// NewMeta 用于创建一个默认的下载元数据
+// NewDownloadMeta 用于创建一个默认的下载元数据
 func NewDownloadMeta(link, fileName, originUrl string) *Download {
 	dm := Download{Link: link, FileName: fileName, OriginUrl: originUrl}
 	m := myhttp.GenDefaultHeaderMapByUrl(nil, link)
