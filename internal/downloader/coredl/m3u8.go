@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
-	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/downloader/dlpool"
 	"video-downloader-go/internal/meta"
@@ -128,19 +127,14 @@ func handleTsMetasMultiThread(tsMetas []*m3u8.TsMeta, downloadFunc func(*m3u8.Ts
 	for _, tmt := range tsMetas {
 		copyMt := tmt
 		wg.Add(1)
+
 		err = dlpool.SubmitDownload(func() {
-			appctx.WaitGroup().Add(1)
 			defer wg.Done()
-			defer appctx.WaitGroup().Done()
-			select {
-			case <-appctx.Context().Done():
-				return
-			default:
-				if err == nil {
-					downloadFunc(copyMt)
-				}
+			if err == nil {
+				downloadFunc(copyMt)
 			}
 		})
+
 		if err != nil {
 			return errors.Wrap(err, "协程池异常，请检查配置")
 		}

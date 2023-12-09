@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mymath"
 )
@@ -86,8 +85,6 @@ func (tb *MyTokenBucket) setTotalConsume(value int64) {
 
 // 定时自动计算当前的下载速率
 func (tb *MyTokenBucket) autoCalcRateLimit() {
-	ctx := appctx.Context()
-	wg := appctx.WaitGroup()
 	lastCalcTime := time.Now().UnixMilli()
 	tb.totalConsume = tb.TotalConsume()
 	var unit int64 = 1024
@@ -111,18 +108,10 @@ func (tb *MyTokenBucket) autoCalcRateLimit() {
 		tb.setTotalConsume(0)
 		lastCalcTime = currentTime
 	}
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		for {
-			select {
-			case <-ctx.Done():
-				// 程序退出，定时器终止
-				return
-			default:
-				doCalc()
-				time.Sleep(time.Second * 3)
-			}
+			doCalc()
+			time.Sleep(time.Second * 3)
 		}
 	}()
 }

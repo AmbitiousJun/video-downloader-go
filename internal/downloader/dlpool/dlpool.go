@@ -5,7 +5,6 @@ package dlpool
 import (
 	"sync"
 	"time"
-	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
 
 	"github.com/panjf2000/ants/v2"
@@ -21,30 +20,35 @@ var download *ants.Pool
 // 用于控制单次初始化
 var once sync.Once
 
+// 防止多次释放资源
+var releaseMutex sync.Mutex
+
+// 销毁所有的协程池
+func ReleaseAll() {
+	releaseMutex.Lock()
+	defer releaseMutex.Unlock()
+	if task != nil {
+		task.Release()
+	}
+	if download != nil {
+		download.Release()
+	}
+}
+
 // SubmitDownload 用于异步提交下载任务
 func SubmitDownload(d func()) error {
-	return submit(download, d)
+	if err := initOnce(); err != nil {
+		return err
+	}
+	return download.Submit(d)
 }
 
 // SubmitTask 用于异步提交视频下载任务
 func SubmitTask(t func()) error {
-	return submit(task, t)
-}
-
-func submit(p *ants.Pool, handleFunc func()) error {
 	if err := initOnce(); err != nil {
 		return err
 	}
-	return task.Submit(func() {
-		select {
-		case <-appctx.Context().Done():
-			// 释放资源并退出
-			releaseAll()
-			return
-		default:
-			handleFunc()
-		}
-	})
+	return task.Submit(t)
 }
 
 // initOnce 用于全局初始化一次协程次配置
@@ -60,7 +64,7 @@ func initFromGlobalConfig() (err error) {
 	defer func() {
 		if err != nil {
 			// 清除初始化一半的协程池
-			releaseAll()
+			ReleaseAll()
 		}
 	}()
 	tasks := config.G.Downloader.TaskThreadCount
@@ -76,21 +80,6 @@ func initFromGlobalConfig() (err error) {
 		return
 	}
 	return
-}
-
-// 防止多次释放资源
-var releaseMutex sync.Mutex
-
-// 销毁所有的协程池
-func releaseAll() {
-	releaseMutex.Lock()
-	defer releaseMutex.Unlock()
-	if task != nil {
-		task.Release()
-	}
-	if download != nil {
-		download.Release()
-	}
 }
 
 func commonAntsOptions() ants.Options {

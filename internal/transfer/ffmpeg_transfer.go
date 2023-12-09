@@ -131,22 +131,13 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 
 // 执行命令行命令
 func (ft *ffmpegTransfer) executeCmd(cmd *exec.Cmd) error {
-	out, err := cmd.StdoutPipe()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, "获取输出通道失败")
+		return errors.Wrap(err, "执行命令时出错")
 	}
-	if err = cmd.Start(); err != nil {
-		return errors.Wrap(err, "启动命令失败")
-	}
-	scanner := bufio.NewScanner(out)
+	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	for scanner.Scan() {
 		mylog.Info(scanner.Text())
-	}
-	if err = scanner.Err(); err != nil {
-		mylog.Error(fmt.Sprintf("输出命令执行日志异常：%v", err))
-	}
-	if err = cmd.Wait(); err != nil {
-		return errors.Wrap(err, "命令执行时出错")
 	}
 	return nil
 }

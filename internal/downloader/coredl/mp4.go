@@ -9,7 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/downloader/dlpool"
 	"video-downloader-go/internal/meta"
 	"video-downloader-go/internal/util"
@@ -136,19 +135,14 @@ func handleTasksMultiThread(tasks []*unitTask, downloadTaskFunc func(*unitTask))
 		// 在 for-range 结构中使用多协程时需要拷贝指针
 		copyTask := task
 		wg.Add(1)
+
 		err = dlpool.SubmitDownload(func() {
-			appctx.WaitGroup().Add(1)
 			defer wg.Done()
-			defer appctx.WaitGroup().Done()
-			select {
-			case <-appctx.Context().Done():
-				return
-			default:
-				if err == nil {
-					downloadTaskFunc(copyTask)
-				}
+			if err == nil {
+				downloadTaskFunc(copyTask)
 			}
 		})
+
 		if err != nil {
 			return errors.Wrap(err, "协程池运行异常，请检查配置")
 		}
