@@ -53,7 +53,7 @@ func doListen(list *meta.TaskDeque[meta.Download], completeOne DownloadListener,
 			defer appctx.WaitGroup().Done()
 			originFilename := dmt.FileName
 			link := dmt.Link
-			fileName := config.GlobalConfig.Downloader.DownloadDir + string(filepath.Separator) + originFilename + ".mp4"
+			fileName := config.G.Downloader.DownloadDir + string(filepath.Separator) + originFilename + ".mp4"
 			dmt.FileName = fileName
 			mylog.Info(fmt.Sprintf("监听到下载任务，文件名：%v，下载地址：%v", fileName, link))
 			// TODO：初始化下载器并下载

@@ -57,7 +57,7 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 		TotalBytes:   currentBytes,
 	})
 	// 2 初始化临时文件夹
-	tempDirPath, err := myfile.InitTempTsDir(dmt.FileName, config.GlobalConfig.Downloader.TsDirSuffix)
+	tempDirPath, err := myfile.InitTempTsDir(dmt.FileName, config.G.Downloader.TsDirSuffix)
 	if err != nil {
 		return errors.Wrapf(err, "初始化临时 ts 文件夹失败，file: %v", dmt.FileName)
 	}

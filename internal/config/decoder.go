@@ -43,7 +43,7 @@ type YtDlFormatCode struct {
 
 // 检查解析器配置
 func checkDecoderConfig() error {
-	cfg := GlobalConfig.Decoder
+	cfg := G.Decoder
 	// 1 检查解析器类型是否合法
 	validTypes := []string{DecoderNone, DecoderYoutubeDl}
 	cfg.Use = strings.TrimSpace(cfg.Use)
@@ -91,7 +91,7 @@ func checkDecoderConfig() error {
 
 // 检查 format code
 func checkFormatCodes() error {
-	rawCodes := GlobalConfig.Decoder.YoutubeDL.RawFormatCodes
+	rawCodes := G.Decoder.YoutubeDL.RawFormatCodes
 	formatCodes := []*YtDlFormatCode{}
 	for _, raw := range rawCodes {
 		cs := strings.Split(raw, "+")
@@ -100,7 +100,7 @@ func checkFormatCodes() error {
 		}
 		formatCodes = append(formatCodes, &YtDlFormatCode{raw, len(cs)})
 	}
-	GlobalConfig.Decoder.YoutubeDL.FormatCodes = formatCodes
+	G.Decoder.YoutubeDL.FormatCodes = formatCodes
 	return nil
 }
 

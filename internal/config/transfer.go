@@ -24,7 +24,7 @@ const DefaultFilenameRegex = "_(\\d+)\\."
 
 // 检查转换器配置
 func checkTransferConfig() error {
-	cfg := GlobalConfig.Transfer
+	cfg := G.Transfer
 	cfg.Use = strings.TrimSpace(cfg.Use)
 	validTypes := []string{TransferFfmpeg}
 	flag := false

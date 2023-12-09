@@ -15,5 +15,5 @@ func main() {
 		mylog.Error(err.Error())
 		return
 	}
-	fmt.Println(config.GlobalConfig)
+	fmt.Println(config.G)
 }

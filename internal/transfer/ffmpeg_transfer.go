@@ -42,7 +42,7 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string) error {
 	if err != nil {
 		return errors.Wrap(err, "读取文件时出错")
 	}
-	regex, err := regexp.Compile(config.GlobalConfig.Transfer.TsFilenameRegex)
+	regex, err := regexp.Compile(config.G.Transfer.TsFilenameRegex)
 	if err != nil {
 		return errors.Wrap(err, "正则表达式编译错误")
 	}

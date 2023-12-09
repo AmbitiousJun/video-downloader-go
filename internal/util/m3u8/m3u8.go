@@ -185,7 +185,7 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 // @param tsDirPath 临时目录
 func Merge(tsDirPath string) error {
 	dirName := filepath.Base(tsDirPath)
-	fileName := dirName[:len(dirName)-len(config.GlobalConfig.Downloader.TsDirSuffix)-1]
+	fileName := dirName[:len(dirName)-len(config.G.Downloader.TsDirSuffix)-1]
 	mylog.Info(fmt.Sprintf("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName))
 	err := transfer.Instance().Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName)
 	if err != nil {

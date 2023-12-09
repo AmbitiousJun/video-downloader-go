@@ -20,7 +20,7 @@ type Config struct {
 }
 
 // 全局配置对象
-var GlobalConfig = &Config{}
+var G = &Config{}
 
 // 全局加载配置
 func Load(configFilePath string) error {
@@ -33,7 +33,7 @@ func Load(configFilePath string) error {
 		return errors.Wrap(err, "读取配置文件失败")
 	}
 	// 2 读取配置到 Config 结构中
-	err = yaml.Unmarshal(fileBytes, GlobalConfig)
+	err = yaml.Unmarshal(fileBytes, G)
 	if err != nil {
 		return errors.Wrap(err, "读取配置文件失败")
 	}
@@ -59,7 +59,7 @@ func Load(configFilePath string) error {
 
 // 读取依赖路径地址
 func readDependencyPaths() {
-	os := strings.TrimSpace(GlobalConfig.Os)
+	os := strings.TrimSpace(G.Os)
 	FfmpegPath, YoutubeDlPath = "ffmpeg", "youtube-dl"
 	if os == "" {
 		return

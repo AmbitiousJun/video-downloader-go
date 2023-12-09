@@ -11,7 +11,7 @@ var Instance = (func() func() TsTransfer {
 	var once sync.Once
 	return func() TsTransfer {
 		once.Do(func() {
-			tfType := config.GlobalConfig.Transfer.Use
+			tfType := config.G.Transfer.Use
 			switch tfType {
 			case config.TransferFfmpeg:
 				t = &ffmpegTransfer{}

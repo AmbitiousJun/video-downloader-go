@@ -63,8 +63,8 @@ func initFromGlobalConfig() (err error) {
 			releaseAll()
 		}
 	}()
-	tasks := config.GlobalConfig.Downloader.TaskThreadCount
-	downloads := config.GlobalConfig.Downloader.DlThreadCount
+	tasks := config.G.Downloader.TaskThreadCount
+	downloads := config.G.Downloader.DlThreadCount
 	task, err = ants.NewPool(tasks, ants.WithOptions(commonAntsOptions()))
 	if err != nil {
 		err = errors.Wrap(err, "初始化下载任务协程池失败")
