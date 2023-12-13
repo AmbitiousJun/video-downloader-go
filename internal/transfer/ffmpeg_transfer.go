@@ -1,7 +1,6 @@
 package transfer
 
 import (
-	"bufio"
 	"fmt"
 	"io/fs"
 	"math"
@@ -135,9 +134,6 @@ func (ft *ffmpegTransfer) executeCmd(cmd *exec.Cmd) error {
 	if err != nil {
 		return errors.Wrap(err, "执行命令时出错")
 	}
-	scanner := bufio.NewScanner(strings.NewReader(string(out)))
-	for scanner.Scan() {
-		mylog.Info(scanner.Text())
-	}
+	mylog.Info(string(out))
 	return nil
 }
