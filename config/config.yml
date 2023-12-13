@@ -45,7 +45,8 @@ downloader:
   use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
   task-thread-count: 1 # 处理下载任务的线程个数
   dl-thread-count: 32 # 多线程下载的线程个数
-  download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+  # download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+  download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
   ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
   rate-limit: 3.5mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
 

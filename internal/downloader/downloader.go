@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/downloader/coredl"
@@ -86,31 +87,41 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 	})
 }
 
+// coreDownloaderCache 用于缓存初始化好的下载器
+// 在命令行模式下，只能通过全局配置文件初始化一个下载器
+var coreDownloaderCache coredl.Downloader
+
+// initDownloaderOnce 用于控制下载器初始化逻辑只执行一次
+var initDownloaderOnce sync.Once
+
 // initCoreDownloader 根据全局配置初始化一个下载器对象
 // 如果初始化失败，程序将直接退出
 func initCoreDownloader() coredl.Downloader {
 
-	// 获取配置
-	resource := config.G.Decoder.ResourceType
-	dlType := config.G.Downloader.Use
+	initDownloaderOnce.Do(func() {
+		// 获取配置
+		resource := config.G.Decoder.ResourceType
+		dlType := config.G.Downloader.Use
 
-	// 生成对象
-	switch resource + dlType {
+		// 生成对象
+		switch resource + dlType {
 
-	case config.ResourceMP4 + config.DownloadSimple:
-		return coredl.NewMp4Simple()
+		case config.ResourceMP4 + config.DownloadSimple:
+			coreDownloaderCache = coredl.NewMp4Simple()
 
-	case config.ResourceMP4 + config.DownloadMultiThread:
-		return coredl.NewMp4MultiThread()
+		case config.ResourceMP4 + config.DownloadMultiThread:
+			coreDownloaderCache = coredl.NewMp4MultiThread()
 
-	case config.ResourceM3U8 + config.DownloadSimple:
-		return coredl.NewM3U8Simple()
+		case config.ResourceM3U8 + config.DownloadSimple:
+			coreDownloaderCache = coredl.NewM3U8Simple()
 
-	case config.ResourceM3U8 + config.DownloadMultiThread:
-		return coredl.NewM3U8MultiThread()
+		case config.ResourceM3U8 + config.DownloadMultiThread:
+			coreDownloaderCache = coredl.NewM3U8MultiThread()
 
-	default:
-		log.Fatal("下载器初始化异常，请检查配置")
-		return nil
-	}
+		default:
+			log.Fatal("下载器初始化异常，请检查配置")
+		}
+	})
+
+	return coreDownloaderCache
 }
