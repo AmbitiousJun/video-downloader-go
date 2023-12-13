@@ -1,8 +1,4 @@
-# 待开发任务及开发日志
+# 待开发任务
 
-## TODO
-
-- 开发命令行下载器 downloader
-- 开发命令行解析器 decoder
-
-## 开发日志
+1. 开发命令行下载器 downloader ✔
+2. 开发命令行解析器 decoder
