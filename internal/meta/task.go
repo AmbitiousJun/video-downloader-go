@@ -24,6 +24,14 @@ func (td *TaskDeque[T]) OfferFirst(val *T) {
 	td.list = append([]*T{val}, td.list...)
 }
 
+// Get 返回队列指定索引的元素，越界返回空
+func (td *TaskDeque[T]) Get(index int) *T {
+	if index < 0 || index >= td.Size() {
+		return nil
+	}
+	return td.list[index]
+}
+
 // Size 返回队列的大小
 func (td *TaskDeque[T]) Size() int {
 	return len(td.list)
