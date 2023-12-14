@@ -1,6 +1,9 @@
 package meta
 
-import "video-downloader-go/internal/util/myhttp"
+import (
+	"fmt"
+	"video-downloader-go/internal/util/myhttp"
+)
 
 // 视频文件元数据
 type Video struct {
@@ -22,4 +25,20 @@ func NewDownloadMeta(link, fileName, originUrl string) *Download {
 	m := myhttp.GenDefaultHeaderMapByUrl(nil, link)
 	dm.HeaderMap = m
 	return &dm
+}
+
+// 格式化输出
+func (v *Video) String() string {
+	return fmt.Sprintf("[Video[Name: %v, Url: %v]]", v.Name, v.Url)
+}
+
+// 格式化输出
+func (d *Download) String() string {
+	return fmt.Sprintf(
+		"[Download[Link: %v, FileName: %v, OriginUrl: %v, HeaderMap: %v]]",
+		d.Link,
+		d.FileName,
+		d.OriginUrl,
+		d.HeaderMap,
+	)
 }

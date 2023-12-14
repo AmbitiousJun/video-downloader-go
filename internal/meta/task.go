@@ -4,10 +4,17 @@ package meta
 
 import "sync"
 
-// 任务列表双端队列结构，泛型取值为 Decode 和 Download
+// 任务列表双端队列结构，泛型取值为 Video 和 Download
 type TaskDeque[T any] struct {
 	list []*T       // 存储数据的切片
 	mu   sync.Mutex // 协程同步
+}
+
+// Range 用于遍历队列元素
+func (td *TaskDeque[T]) Range(itemHandler func(item *T, index int)) {
+	for i := 0; i < td.Size(); i++ {
+		itemHandler(td.Get(i), i)
+	}
 }
 
 // OfferLast 从队尾添加一个元素

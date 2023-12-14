@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/downloader"
 	"video-downloader-go/internal/meta"
 	"video-downloader-go/internal/util/mylog"
 
@@ -34,10 +37,25 @@ func main() {
 		mylog.Info("解析列表为空，程序停止")
 		return
 	}
+	downloadList := new(meta.TaskDeque[meta.Download])
 
 	// TODO 开启解析任务
 
-	// TODO 开启下载任务
+	// 开启下载任务
+	var downloadWg sync.WaitGroup
+	remainCnt := int64(decodeList.Size())
+	downloadWg.Add(decodeList.Size())
+	downloader.ListenAndDownload(downloadList, func() {
+		downloadWg.Done()
+		atomic.AddInt64(&remainCnt, -1)
+		mylog.Success(fmt.Sprintf("一个文件下载完成，还剩下：%v 个", remainCnt))
+	}, func(dmt *meta.Download) {
+		// 下载器判断出无法正常下载的视频，重新加入到解析列表中
+		fileName, originUrl := dmt.FileName, dmt.OriginUrl
+		decodeList.OfferLast(&meta.Video{Name: fileName, Url: originUrl})
+	})
+	downloadWg.Wait()
+	mylog.Success("所有任务处理完成")
 }
 
 // readVideoData 读取用户在 config/data.txt 目录下配置的输入数据
@@ -55,7 +73,7 @@ func readVideoData() (*meta.TaskDeque[meta.Video], error) {
 	scanner := bufio.NewScanner(f)
 
 	// 逐行读取数据并处理
-	list := &meta.TaskDeque[meta.Video]{}
+	list := new(meta.TaskDeque[meta.Video])
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -73,9 +91,9 @@ func readVideoData() (*meta.TaskDeque[meta.Video], error) {
 		return nil, errors.Wrap(err, "扫描源数据文件失败")
 	}
 
-	for i := 0; i < list.Size(); i++ {
-		mylog.Success(fmt.Sprintf("%v", list.Get(i)))
-	}
+	list.Range(func(item *meta.Video, index int) {
+		mylog.Info(fmt.Sprintf("%v", item))
+	})
 
 	mylog.Success("读取完成！")
 	return list, nil

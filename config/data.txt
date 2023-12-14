@@ -1,1 +1,2 @@
-test|https://www.bilibili.com/video/BV1jv41187YV
+test|https://example.com/a.mp4
+test1|https://example.com/b.mp4

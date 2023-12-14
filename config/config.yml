@@ -54,4 +54,4 @@ transfer:
   use: ffmpeg # 要选用哪个转码器，可选值：ffmpeg
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
-os: macos
+os: windows-x86
