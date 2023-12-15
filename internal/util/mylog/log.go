@@ -43,29 +43,29 @@ func Block() {
 
 // 添加一条 info 日志到队列中
 func Info(logMsg string) {
-	lq.offerLast(packMsg("INFO", ANSIInfo, logMsg))
+	lq.offerLast(PackMsg("INFO", ANSIInfo, logMsg))
 }
 
 // 添加一条 success 日志到队列中
 func Success(logMsg string) {
-	lq.offerLast(packMsg("SUCCESS", ANSISuccess, logMsg))
+	lq.offerLast(PackMsg("SUCCESS", ANSISuccess, logMsg))
 }
 
 // 添加一条 error 日志到队列中
 func Error(logMsg string) {
-	lq.offerLast(packMsg("ERROR", ANSIDanger, logMsg))
+	lq.offerLast(PackMsg("ERROR", ANSIDanger, logMsg))
 }
 
 // 添加一条 warn 日志到队列中
 func Warn(logMsg string) {
-	lq.offerLast(packMsg("WARN", ANSIWarning, logMsg))
+	lq.offerLast(PackMsg("WARN", ANSIWarning, logMsg))
 }
 
 // 给日志封装上颜色输出标志
 // prefix 日志前缀
 // logType 颜色输出标志
 // logMsg 要封装的消息
-func packMsg(prefix, logType, logMsg string) *logItem {
+func PackMsg(prefix, logType, logMsg string) *logItem {
 	return &logItem{logType + prefix + " " + logMsg + ANSIReset}
 }
 
