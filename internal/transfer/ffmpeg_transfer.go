@@ -88,7 +88,7 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 		}
 		for i := 0; i < handleSize; i++ {
 			pos := current + i
-			if strings.EqualFold(tsFilePaths[pos], tempTsFilePath) {
+			if tsFilePaths[pos] == tempTsFilePath {
 				// 不处理临时 ts 文件
 				continue
 			}

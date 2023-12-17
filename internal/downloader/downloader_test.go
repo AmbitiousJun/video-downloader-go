@@ -1,7 +1,6 @@
 package downloader_test
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"video-downloader-go/internal/appctx"
@@ -27,7 +26,7 @@ func TestUseListenerToDownload(t *testing.T) {
 		mylog.Success("成功下载完成一个任务")
 		wg.Done()
 	}, func(dmt *meta.Download) {
-		mylog.Error(fmt.Sprintf("下载失败了, %v", dmt))
+		mylog.Errorf("下载失败了, %v", dmt)
 		wg.Done()
 	})
 	wg.Wait()

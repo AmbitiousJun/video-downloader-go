@@ -54,6 +54,8 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 		Total:        total,
 		CurrentBytes: currentBytes,
 		TotalBytes:   currentBytes,
+		CurrentTask:  1,
+		TotalTasks:   1,
 	})
 	// 2 初始化临时文件夹
 	tempDirPath, err := myfile.InitTempTsDir(dmt.FileName, config.G.Downloader.TsDirSuffix)
@@ -90,6 +92,8 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 			Total:        total,
 			CurrentBytes: currentBytes,
 			TotalBytes:   currentBytes,
+			CurrentTask:  1,
+			TotalTasks:   1,
 		})
 	}
 	if multiThread {

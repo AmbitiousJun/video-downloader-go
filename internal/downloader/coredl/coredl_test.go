@@ -1,7 +1,6 @@
 package coredl_test
 
 import (
-	"fmt"
 	"testing"
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
@@ -20,7 +19,7 @@ func TestDownloadM3U8(t *testing.T) {
 	dl := coredl.NewM3U8MultiThread()
 	err := dl.Exec(dmt, func(p *coredl.Progress) {
 		percent := float64(p.Current) / float64(p.Total) * 100
-		mylog.Success(fmt.Sprintf("当前文件下载进度：%v/%v(%.2f%%)，已下载：%vbytes，总共：%vbytes", p.Current, p.Total, percent, p.CurrentBytes, p.TotalBytes))
+		mylog.Successf("当前文件下载进度：%v/%v(%.2f%%)，已下载：%vbytes，总共：%vbytes", p.Current, p.Total, percent, p.CurrentBytes, p.TotalBytes)
 	})
 	if err != nil {
 		t.Error(err)
@@ -37,7 +36,7 @@ func TestDownloadMp4(t *testing.T) {
 	dl := coredl.NewMp4MultiThread()
 	err := dl.Exec(dmt, func(p *coredl.Progress) {
 		percent := float64(p.Current) / float64(p.Total) * 100
-		mylog.Success(fmt.Sprintf("当前文件下载进度：%v/%v(%.2f%%)，已下载：%vbytes，总共：%vbytes", p.Current, p.Total, percent, p.CurrentBytes, p.TotalBytes))
+		mylog.Successf("当前文件下载进度：%v/%v(%.2f%%)，已下载：%vbytes，总共：%vbytes", p.Current, p.Total, percent, p.CurrentBytes, p.TotalBytes)
 	})
 	if err != nil {
 		t.Error(err)

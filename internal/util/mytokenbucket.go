@@ -3,10 +3,8 @@ package util
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
-	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mymath"
 )
 
@@ -18,6 +16,7 @@ type MyTokenBucket struct {
 	lastRefillTime    int64        // 最后一次补充令牌的时间
 	tokensMutex       sync.Mutex   // 用于控制令牌数的同步读写
 	totalConsumeMutex sync.RWMutex // 用于控制总消耗令牌的同步读写
+	CurrentRateStr    string       // 记录当前的下载速率
 }
 
 const (
@@ -99,10 +98,10 @@ func (tb *MyTokenBucket) autoCalcRateLimit() {
 			rate = float64(tb.totalConsume) * float64(milliUnit) / float64(unit) / float64(unit) / float64(milli)
 		}
 		rateStr := fmt.Sprintf("%.1f", rate)
-		if strings.EqualFold(lastRateStr, rateStr) {
+		if lastRateStr == rateStr {
 			return
 		}
-		mylog.Warn(fmt.Sprintf("当前下载速率：%v MB/s", rateStr))
+		tb.CurrentRateStr = fmt.Sprintf("%v MB/s", rateStr)
 		lastRateStr = rateStr
 		// 清空状态
 		tb.setTotalConsume(0)

@@ -2,13 +2,13 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/decoder"
 	"video-downloader-go/internal/downloader"
 	"video-downloader-go/internal/meta"
 	"video-downloader-go/internal/util/mylog"
@@ -39,7 +39,10 @@ func main() {
 	}
 	downloadList := new(meta.TaskDeque[meta.Download])
 
-	// TODO 开启解析任务
+	// 开启解析任务
+	decoder.ListenAndDecode(decodeList, func(d *meta.Download) {
+		downloadList.OfferLast(d)
+	})
 
 	// 开启下载任务
 	var downloadWg sync.WaitGroup
@@ -48,7 +51,7 @@ func main() {
 	downloader.ListenAndDownload(downloadList, func() {
 		downloadWg.Done()
 		atomic.AddInt64(&remainCnt, -1)
-		mylog.Success(fmt.Sprintf("一个文件下载完成，还剩下：%v 个", remainCnt))
+		mylog.Successf("一个文件下载完成，剩余：%v 个", remainCnt)
 	}, func(dmt *meta.Download) {
 		// 下载器判断出无法正常下载的视频，重新加入到解析列表中
 		fileName, originUrl := dmt.FileName, dmt.OriginUrl
@@ -92,7 +95,7 @@ func readVideoData() (*meta.TaskDeque[meta.Video], error) {
 	}
 
 	list.Range(func(item *meta.Video, index int) {
-		mylog.Info(fmt.Sprintf("%v", item))
+		mylog.Infof("%v", item)
 	})
 
 	mylog.Success("读取完成！")

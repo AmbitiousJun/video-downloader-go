@@ -77,7 +77,7 @@ func checkDownloaderConfig() error {
 			if err != nil {
 				return errors.Wrap(err, "检查下载器配置时出现异常")
 			}
-			mylog.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, kbps))
+			mylog.Successf("下载速率限制：%.1f%v", rate, kbps)
 			rate *= 1024
 		} else if strings.HasSuffix(cfg.RateLimit, mbps) {
 			val := cfg.RateLimit[:len(cfg.RateLimit)-len(mbps)]
@@ -85,7 +85,7 @@ func checkDownloaderConfig() error {
 			if err != nil {
 				return errors.Wrap(err, "检查下载器配置时出现异常")
 			}
-			mylog.Success(fmt.Sprintf("下载速率限制：%.1f%v", rate, mbps))
+			mylog.Successf("下载速率限制：%.1f%v", rate, mbps)
 			rate *= 1024 * 1024
 		} else {
 			mylog.Warn("没有配置限速或者配置出错，启用默认的速率限制：5mbps")

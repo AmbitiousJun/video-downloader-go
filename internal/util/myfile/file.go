@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,42 @@ import (
 func FileExist(filePath string) bool {
 	_, err := os.Stat(filePath)
 	return err == nil
+}
+
+// DeleteAnyFileContainsPrefix 将识别给定的绝对路径 fp 所在的目录路径下
+// 任何已 fp 文件名为前缀的 目录 或者 文件
+// 返回值分别是识别到的文件数和成功删除的文件数
+func DeleteAnyFileContainsPrefix(fp string) (int, int, error) {
+	scanCnt, delCnt := 0, 0
+	// 1 分离出目录路径和文件名
+	dirName, fileName := filepath.Dir(fp), filepath.Base(fp)
+
+	// 2 遍历目录下的所有文件，进行筛选和删除
+	pList := []string{}
+	filepath.WalkDir(dirName, func(path string, d fs.DirEntry, err error) error {
+		// 判断是否包含前缀
+		if strings.HasPrefix(filepath.Base(path), fileName) {
+			pList = append(pList, path)
+		}
+		return nil
+	})
+
+	// 遍历删除
+	for _, path := range pList {
+		var err error
+		scanCnt++
+		if s, _ := os.Stat(path); s.IsDir() {
+			err = os.RemoveAll(path)
+		} else {
+			err = os.Remove(path)
+		}
+		if err != nil {
+			return -1, -1, err
+		}
+		delCnt++
+	}
+
+	return scanCnt, delCnt, nil
 }
 
 // 删除文件，如果存在

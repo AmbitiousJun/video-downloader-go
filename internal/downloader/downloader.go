@@ -5,14 +5,19 @@ package downloader
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+	"unsafe"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/downloader/coredl"
 	"video-downloader-go/internal/downloader/dlpool"
+	"video-downloader-go/internal/downloader/ytdl"
 	"video-downloader-go/internal/meta"
+	"video-downloader-go/internal/util/myfile"
 	"video-downloader-go/internal/util/mylog"
 )
 
@@ -55,15 +60,12 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 		link := dmt.Link
 		fileName := fmt.Sprintf("%s%s%s.mp4", config.G.Downloader.DownloadDir, string(filepath.Separator), originFilename)
 		dmt.FileName = fileName
-		mylog.Info(fmt.Sprintf("监听到下载任务，文件名：%v，下载地址：%v", fileName, link))
+		mylog.Infof("监听到下载任务，文件名：%v，下载地址：%v", fileName, link)
 
 		// 初始化下载器并下载
 		cdl := initCoreDownloader()
 		err := cdl.Exec(dmt, func(p *coredl.Progress) {
-			percent := float64(p.Current) / float64(p.Total) * 100
-			curDlMb := float64(p.CurrentBytes) / 1024 / 1024
-			totDlMb := float64(p.TotalBytes) / 1024 / 1024
-			mylog.Success(fmt.Sprintf("当前文件下载进度：%v/%v(%.2f%%)，已下载：%.2f MB，总共：%.2f MB", p.Current, p.Total, percent, curDlMb, totDlMb))
+			printDownloadProgress(dmt.FileName, p)
 		})
 
 		// 下载成功
@@ -72,19 +74,70 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 			return
 		}
 
+		// 下载出现异常，检查是否有下载一半的文件，将其删除
+		myfile.DeleteAnyFileContainsPrefix(dmt.FileName)
+
 		// 下载失败，无效的 m3u8
-		if strings.EqualFold(err.Error(), UnValidM3U8) {
+		if err.Error() == UnValidM3U8 {
 			dmt.FileName = originFilename
-			mylog.Warn(fmt.Sprintf("下载失败：%v, 重新添加到解析任务中，视频名称：%v", err, dmt.FileName))
+			mylog.Warnf("下载失败：%v, 重新添加到解析任务中，视频名称：%v", err, dmt.FileName)
 			// 触发下载异常
 			dlErrorHandler(dmt)
 			return
 		}
 
 		// 其他下载异常
-		mylog.Error(fmt.Sprintf("下载失败：%v，重新加入下载列表", err))
+		mylog.Errorf("下载失败：%v，重新加入下载列表", err)
 		offerBack(dmt)
 	})
+}
+
+// printDownloadProgress 负责将下载进度日志输出到控制台上
+func printDownloadProgress(fileName string, p *coredl.Progress) {
+	percent := float64(p.Current) / float64(p.Total)
+	curDlMb := float64(p.CurrentBytes) / 1024 / 1024
+	totDlMb := float64(p.TotalBytes) / 1024 / 1024
+
+	// 获取控制台中一行可以显示多少个字符，用于显示进度条
+	var dimensions [4]uint16
+	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdout.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0)
+
+	var totalBlocks, finishBlocks int
+	if err == 0 {
+		// 28 是日志输出前缀长度：'2023/12/17 01:15:15 SUCCESS '
+		// 2 是输出进度条的时候的左右括号
+		totalBlocks = int(dimensions[1] - 28 - 2)
+		finishBlocks = int(float64(totalBlocks) * percent)
+		if p.Current == p.Total-1 {
+			// 剩最后一个分片时，进度条拉满
+			finishBlocks = totalBlocks
+		}
+	}
+
+	if err == 0 {
+		// 清空最后 9 行日志
+		mylog.Success("\033[9F\033[J\r")
+		mylog.Success("==== 下载进度 ⬇️")
+
+		// 输出进度条
+		mylog.Successf("[%v%v]", strings.Repeat("*", finishBlocks), strings.Repeat("-", totalBlocks-finishBlocks))
+
+		// 控制文件名的长度不超过 1 行
+		maxLen := int(float64(dimensions[1]) * 0.6)
+		if len(fileName) > maxLen {
+			fileName = fileName[:maxLen] + "..."
+		}
+	} else {
+		mylog.Success("==== 下载进度 ⬇️")
+		mylog.Success("")
+	}
+
+	mylog.Successf("文件名：%v", fileName)
+	mylog.Successf("分片进度：%v/%v(%.2f%%)", p.Current, p.Total, percent*100)
+	mylog.Successf("文件大小：%.2f/%.2f (MB)", curDlMb, totDlMb)
+	mylog.Successf("任务进度：%v/%v", p.CurrentTask, p.TotalTasks)
+	mylog.Successf("下载速率：%s", config.RateLimitBucket().CurrentRateStr)
+	mylog.Success("==== 下载进度 ⬆️")
 }
 
 // coreDownloaderCache 用于缓存初始化好的下载器
@@ -99,6 +152,12 @@ var initDownloaderOnce sync.Once
 func initCoreDownloader() coredl.Downloader {
 
 	initDownloaderOnce.Do(func() {
+		// 如果是通过 youtube-dl 解析的，就使用适配的下载器
+		if config.G.Decoder.Use == config.DecoderYoutubeDl {
+			coreDownloaderCache = ytdl.New()
+			return
+		}
+
 		// 获取配置
 		resource := config.G.Decoder.ResourceType
 		dlType := config.G.Downloader.Use

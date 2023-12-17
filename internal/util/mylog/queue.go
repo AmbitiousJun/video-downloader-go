@@ -15,6 +15,10 @@ type logQueue struct {
 
 var mu sync.RWMutex
 
+func (li *logItem) String() string {
+	return li.string
+}
+
 // 获取队列的长度
 func (lq *logQueue) Len() int {
 	mu.RLock()

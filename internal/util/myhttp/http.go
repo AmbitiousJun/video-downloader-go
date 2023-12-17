@@ -28,6 +28,10 @@ const (
 	HttpHeaderRangesKey     = "Range"               // Range 请求头 key
 )
 
+const (
+	ErrConnectionReset = "connection reset"
+)
+
 // 生成一个带有默认 referer 头的 headerMap
 // @param baseMap 已存在的 map，提供了这个值的话，就会在这个 map 上加值
 // @param url 需要转换的 url
@@ -106,7 +110,9 @@ func DownloadWithRateLimit(request *http.Request, destPath string) (int64, error
 		subRequest.Header.Set(HttpHeaderRangesKey, rangeHeader)
 		resp, err := client.Do(subRequest)
 		if err != nil {
-			util.PrintRetryError("发送请求时出现异常", err, 2)
+			if !strings.Contains(err.Error(), ErrConnectionReset) {
+				util.PrintRetryError("发送请求时出现异常", err, 2)
+			}
 			continue
 		}
 		code := resp.StatusCode

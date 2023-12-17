@@ -2,8 +2,10 @@
 package mylog
 
 import (
+	"fmt"
 	"log"
 	"math"
+	"strings"
 	"time"
 	"video-downloader-go/internal/appctx"
 )
@@ -46,9 +48,19 @@ func Info(logMsg string) {
 	lq.offerLast(PackMsg("INFO", ANSIInfo, logMsg))
 }
 
+// 格式化输出 info 日志
+func Infof(format string, args ...interface{}) {
+	Info(fmt.Sprintf(format, args...))
+}
+
 // 添加一条 success 日志到队列中
 func Success(logMsg string) {
 	lq.offerLast(PackMsg("SUCCESS", ANSISuccess, logMsg))
+}
+
+// 格式化输出 success 日志
+func Successf(format string, args ...interface{}) {
+	Success(fmt.Sprintf(format, args...))
 }
 
 // 添加一条 error 日志到队列中
@@ -56,9 +68,19 @@ func Error(logMsg string) {
 	lq.offerLast(PackMsg("ERROR", ANSIDanger, logMsg))
 }
 
+// 格式化输出一条 error 日志
+func Errorf(format string, args ...interface{}) {
+	Error(fmt.Sprintf(format, args...))
+}
+
 // 添加一条 warn 日志到队列中
 func Warn(logMsg string) {
 	lq.offerLast(PackMsg("WARN", ANSIWarning, logMsg))
+}
+
+// 格式化输出一条 warn 日志
+func Warnf(format string, args ...interface{}) {
+	Warn(fmt.Sprintf(format, args...))
 }
 
 // 给日志封装上颜色输出标志
@@ -66,7 +88,10 @@ func Warn(logMsg string) {
 // logType 颜色输出标志
 // logMsg 要封装的消息
 func PackMsg(prefix, logType, logMsg string) *logItem {
-	return &logItem{logType + prefix + " " + logMsg + ANSIReset}
+	if strings.TrimSpace(prefix) == "" {
+		return &logItem{string: logType + logMsg + ANSIReset}
+	}
+	return &logItem{string: logType + prefix + " " + logMsg + ANSIReset}
 }
 
 // 输出日志
@@ -74,7 +99,7 @@ func printLog(li *logItem) {
 	if li == nil {
 		return
 	}
-	log.Println(li.string)
+	log.Println(li)
 }
 
 // 输出当前队列中的所有日志

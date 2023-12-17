@@ -2,8 +2,14 @@ package meta
 
 import (
 	"fmt"
+	"strings"
 	"video-downloader-go/internal/util/myhttp"
+
+	"github.com/google/uuid"
 )
+
+// 用于分割下载链接的分割串
+var YtdlLinksSep = uuid.New().String()
 
 // 视频文件元数据
 type Video struct {
@@ -17,6 +23,16 @@ type Download struct {
 	FileName  string            // 视频名称
 	OriginUrl string            // 源视频地址
 	HeaderMap map[string]string // 请求头
+}
+
+// 创建一个适配 youtube-dl 的下载元数据
+func NewYtDlDownloadMeta(links []string, fileName, originUrl string) *Download {
+	return NewDownloadMeta(strings.Join(links, YtdlLinksSep), fileName, originUrl)
+}
+
+// 将一个 link 分割为 link 数组
+func Split2YtDlLinks(link string) []string {
+	return strings.Split(link, YtdlLinksSep)
 }
 
 // NewDownloadMeta 用于创建一个默认的下载元数据

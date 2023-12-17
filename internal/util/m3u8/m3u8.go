@@ -2,7 +2,6 @@ package m3u8
 
 import (
 	"bufio"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -186,14 +185,14 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 func Merge(tsDirPath string) error {
 	dirName := filepath.Base(tsDirPath)
 	fileName := dirName[:len(dirName)-len(config.G.Downloader.TsDirSuffix)-1]
-	mylog.Info(fmt.Sprintf("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName))
+	mylog.Infof("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName)
 	err := transfer.Instance().Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName)
 	if err != nil {
 		return errors.Wrap(err, "合并失败")
 	}
 	if err = os.RemoveAll(tsDirPath); err != nil {
-		mylog.Error(fmt.Sprintf("临时目录删除失败，目标视频：%s", fileName))
+		mylog.Errorf("临时目录删除失败，目标视频：%s", fileName)
 	}
-	mylog.Success(fmt.Sprintf("合并完成，目标视频：%s", fileName))
+	mylog.Successf("合并完成，目标视频：%s", fileName)
 	return nil
 }

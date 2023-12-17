@@ -2,6 +2,7 @@ package myfile_test
 
 import (
 	"fmt"
+	"log"
 	"testing"
 	"video-downloader-go/internal/util/myfile"
 )
@@ -29,4 +30,13 @@ func TestInitTempTsDir(t *testing.T) {
 		t.Error(err)
 	}
 	fmt.Println(dirPath)
+}
+
+func TestDeleteAnyFileContainsName(t *testing.T) {
+	p := "/Users/ambitious/Downloads/12138.mp4"
+	s, d, err := myfile.DeleteAnyFileContainsPrefix(p)
+	if err != nil {
+		t.Error(err)
+	}
+	log.Printf("匹配个数：%d, 删除个数：%d", s, d)
 }

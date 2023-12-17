@@ -11,10 +11,14 @@ type Downloader interface {
 
 // Progress 是下载进度记录结构
 type Progress struct {
-	Current      int64 // 当前下载进度（已下载的分片数）
-	Total        int64 // 任务总大小（总分片数）
+	Current int64 // 当前下载进度（已下载的分片数）
+	Total   int64 // 任务总大小（总分片数）
+
 	CurrentBytes int64 // 当前下载的字节数
 	TotalBytes   int64 // 总字节数（下载 m3u8 时，这个值与 CurrentBytes 保持一致）
+
+	CurrentTask int // 当前正在执行第几个任务
+	TotalTasks  int // 总共需要执行的任务数
 }
 
 // ProgressHandler 可以使调用方实时获取下载进度

@@ -49,7 +49,7 @@ func checkDecoderConfig() error {
 	cfg.Use = strings.TrimSpace(cfg.Use)
 	flag := false
 	for _, valid := range validTypes {
-		if strings.EqualFold(valid, cfg.Use) {
+		if valid == cfg.Use {
 			flag = true
 		}
 	}
@@ -61,7 +61,7 @@ func checkDecoderConfig() error {
 	cfg.ResourceType = strings.TrimSpace(cfg.ResourceType)
 	flag = false
 	for _, valid := range validResources {
-		if strings.EqualFold(valid, cfg.ResourceType) {
+		if valid == cfg.ResourceType {
 			flag = true
 		}
 	}
@@ -70,7 +70,7 @@ func checkDecoderConfig() error {
 	}
 	// 3 检查 youtube-dl 环境
 	var err error
-	if strings.EqualFold(cfg.Use, DecoderYoutubeDl) {
+	if cfg.Use == DecoderYoutubeDl {
 		err = checkYtDlEnv()
 		if err != nil {
 			return errors.Wrap(err, "检查 youtube-dl 环境失败")

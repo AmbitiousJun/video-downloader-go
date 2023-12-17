@@ -67,6 +67,8 @@ func downloadMp4(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bo
 		Total:        total,
 		CurrentBytes: currentBytes,
 		TotalBytes:   totalBytes,
+		CurrentTask:  1,
+		TotalTasks:   1,
 	})
 	// 3 循环分片进行下载
 	defaultHeaders := myhttp.GenDefaultHeaderMapByUrl(nil, dmt.Link)
@@ -104,6 +106,8 @@ func downloadMp4(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bo
 			Total:        total,
 			CurrentBytes: currentBytes,
 			TotalBytes:   totalBytes,
+			CurrentTask:  1,
+			TotalTasks:   1,
 		})
 	}
 	if multiThread {
