@@ -5,10 +5,10 @@ selenium: # selenium 模拟器相关配置
   show-window: false # 运行程序时，是否实时显示模拟浏览器窗口
 
 decoder: # 解码器相关配置
-  use: youtube-dl # 使用哪种解析方式，可选值：none, free-api, vip-fetch, youtube-dl，若使用 youtube-dl，resource-type 会被忽略
+  use: none # 使用哪种解析方式，可选值：none, free-api, vip-fetch, youtube-dl，若使用 youtube-dl，resource-type 会被忽略
   resource-type: m3u8 # 解析出来的文件类型，可选值：mp4, m3u8
   youtube-dl: # youtube-dl 解析器相关配置
-    cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
+    cookies-from: firefox # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
     format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
   free-api: # 使用免费接口进行解析的相关配置
     use: JsonPlayer # 要使用的解析接口，必须和 decoder.free-api.apis 配置列表中的任意一个匹配
@@ -45,8 +45,8 @@ downloader:
   use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
   task-thread-count: 1 # 处理下载任务的线程个数
   dl-thread-count: 32 # 多线程下载的线程个数
-  download-dir: /Users/ambitious/Downloads # 视频文件下载位置
-  # download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
+  # download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+  download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
   ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
   rate-limit: -1 # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
 
@@ -54,4 +54,4 @@ transfer:
   use: ffmpeg # 要选用哪个转码器，可选值：ffmpeg
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
-os: macos
+os: windows-x86
