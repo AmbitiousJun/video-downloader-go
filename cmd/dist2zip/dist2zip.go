@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 )
@@ -24,22 +26,48 @@ const (
 // 需要打包的平台
 var Platforms = []string{"darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64", "windows-amd64", "windows-arm64"}
 
+// 存放错误信息的通道
+var ErrChan = make(chan error)
+
 func main() {
 	// 遍历 dist 目录
 	dst, err := os.Stat(DistDir)
 	if err != nil || !dst.IsDir() {
 		panic("dist 目录检测失败")
 	}
+
+	var wg sync.WaitGroup
+	var totalTasks atomic.Int64
+
+	go func() {
+		err = <-ErrChan
+		close(ErrChan)
+		// 结束掉仍在执行的 goroutine
+		wg.Add(-int(totalTasks.Load()))
+	}()
+
 	err = filepath.WalkDir(DistDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+		if err != nil || path == DistDir {
 			return err
 		}
 		if d.IsDir() {
-			return err
+			// 跳过子目录
+			return filepath.SkipDir
 		}
 		fileName := strings.TrimSuffix(d.Name(), WindowsFileSuffix)
-		return createZip(OutputDir+"/"+fileName+".zip", path)
+		wg.Add(1)
+		totalTasks.Add(1)
+		go func() {
+			defer func() {
+				wg.Done()
+				totalTasks.Add(-1)
+			}()
+			createZip(OutputDir+"/"+fileName+".zip", path)
+		}()
+		return err
 	})
+
+	wg.Wait()
 
 	if err != nil {
 		panic(errors.Wrap(err, "打包失败"))
@@ -48,11 +76,22 @@ func main() {
 	log.Println("打包完成！")
 }
 
-func createZip(zipPath, execPath string) error {
+var errOnce sync.Once
+
+func createZip(zipPath, execPath string) {
+	var err error
+	defer func() {
+		if err != nil {
+			errOnce.Do(func() {
+				ErrChan <- err
+			})
+		}
+	}()
+
 	// 创建一个新的 zip 文件
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
-		return err
+		return
 	}
 	defer zipFile.Close()
 
@@ -66,14 +105,11 @@ func createZip(zipPath, execPath string) error {
 		execName += WindowsFileSuffix
 	}
 	if err = addFileToZip(zipWriter, execPath, execName); err != nil {
-		return err
+		return
 	}
 
 	// 添加配置目录
-	if err = addDirToZip(zipWriter, ConfigDir, "config"); err != nil {
-		return err
-	}
-	return nil
+	err = addDirToZip(zipWriter, ConfigDir, "config")
 }
 
 func addDirToZip(zipWriter *zip.Writer, fileName, zipName string) error {
@@ -86,7 +122,7 @@ func addDirToZip(zipWriter *zip.Writer, fileName, zipName string) error {
 			// 不处理根目录
 			return nil
 		}
-		if d.IsDir() && path != fileName {
+		if d.IsDir() {
 			// 递归添加子目录
 			err = addDirToZip(zipWriter, path, zipName+"/"+filepath.Base(path))
 			if err == nil {
