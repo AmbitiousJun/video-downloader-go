@@ -220,7 +220,7 @@ func GetRequestRangesFrom(url, method string, headers map[string]string, from in
 	}
 	resp, err := TimeoutHttpClient().Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, util.NetworkError)
+		return nil, errors.Wrap(err, util.NetworkError.Error())
 	}
 	defer resp.Body.Close()
 	if !Is2xxSuccess(resp.StatusCode) {

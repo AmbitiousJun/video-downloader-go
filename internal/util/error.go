@@ -1,7 +1,9 @@
 package util
 
-const (
-	NetworkError = "网络异常" // 网络异常信息，用于区分可重试错误
+import "github.com/pkg/errors"
+
+var (
+	NetworkError = errors.New("网络异常")
 )
 
 // AnyError 从给定的两个错误中返回任意一个不为空的错误

@@ -7,14 +7,14 @@ import (
 	"video-downloader-go/internal/util/mylog"
 )
 
-var retryableErrors = map[string]struct{}{
-	NetworkError: {},
+var retryableErrors = []error{
+	NetworkError,
 }
 
 // 判断是否是可重试异常
 func IsRetryableError(err error) bool {
-	for e := range retryableErrors {
-		if strings.Contains(err.Error(), e) {
+	for _, e := range retryableErrors {
+		if strings.Contains(err.Error(), e.Error()) {
 			return true
 		}
 	}
