@@ -55,3 +55,17 @@ transfer:
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
 os: windows-x86
+
+# 针对不同的域名进行定制化配置
+customs:
+  - decoder: 
+      use: youtube-dl
+      youtube-dl:
+        cookies-from: firefox
+    hosts:
+      - mgtv.com
+  - decoder:
+      use: none
+      resource-type: m3u8
+    hosts:
+      - apd-vlive.apdcdn.tc.qq.com
