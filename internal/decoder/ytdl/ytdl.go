@@ -19,7 +19,7 @@ type Decoder struct{}
 
 // FetchDownloadLinks 是核心解析方法，实现接口 D
 func (d *Decoder) FetchDownloadLinks(url string) ([]string, error) {
-	codes := config.G.Decoder.YoutubeDL.FormatCodes
+	codes := config.G.Decoder.YoutubeDL.CustomFormatCodes(url)
 
 	// 1 尝试配置文件中配置的 format
 	if links, err := d.tryLinks(url, codes); err == nil {

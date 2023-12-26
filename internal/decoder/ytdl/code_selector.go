@@ -48,7 +48,7 @@ out:
 		// 执行命令，获取所有可选的 format code
 		log.Println(mylog.PackMsg("", mylog.ANSIWarning, "正在尝试读取 format code..."))
 		if err := cs.ExecuteProcess(); err != nil {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, "执行命令失败，两秒后重试"))
+			log.Println(mylog.PackMsg("", mylog.ANSIDanger, fmt.Sprintf("执行命令失败: %v，两秒后重试", err)))
 			time.Sleep(time.Second * 2)
 			continue
 		}
@@ -95,8 +95,10 @@ func (cs *CodeSelector) ExecuteProcess() error {
 		"--no-playlist",
 		cs.Url,
 	}
-	if config.G.Decoder.YoutubeDL.CookiesFrom != "" {
-		commands = append(commands, "--cookies-from-browser", config.G.Decoder.YoutubeDL.CookiesFrom)
+
+	ccf := config.G.Decoder.YoutubeDL.CustomCookiesFrom(cs.Url)
+	if ccf != "" {
+		commands = append(commands, "--cookies-from-browser", ccf)
 	}
 
 	// 执行命令

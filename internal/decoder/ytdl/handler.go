@@ -25,8 +25,9 @@ func NewHandler(url string, formatCode *config.YtDlFormatCode) *Handler {
 		"--no-playlist",
 	}
 
-	if config.G.Decoder.YoutubeDL.CookiesFrom != "" {
-		commands = append(commands, "--cookies-from-browser", config.G.Decoder.YoutubeDL.CookiesFrom)
+	ccf := config.G.Decoder.YoutubeDL.CustomCookiesFrom(url)
+	if ccf != "" {
+		commands = append(commands, "--cookies-from-browser", ccf)
 	}
 
 	ydh.cmd = exec.Command(config.YoutubeDlPath, commands...)
