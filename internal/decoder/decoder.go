@@ -21,6 +21,7 @@ type DecodeSuccessHandler func(*meta.Download)
 func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSuccessHandler) {
 	mylog.Info("开始监听解析列表")
 	go func() {
+		ticker := NewGrowableTicker(10, 5*60, 0.2)
 		for {
 			// 没有任务处理时，每阻塞 2 秒检查一次任务列表
 			for list.Empty() {
@@ -49,7 +50,7 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 
 			// 通常情况下，解析任务处理速率远高于下载任务
 			// 所以这里阻塞一段较长的时间，避免解析过快
-			time.Sleep(time.Second * 30)
+			time.Sleep(time.Second * ticker.Next())
 		}
 	}()
 }
