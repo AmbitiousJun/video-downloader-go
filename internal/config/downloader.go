@@ -43,7 +43,7 @@ func RateLimitBucket() *util.MyTokenBucket {
 
 // 检查下载器配置是否正确
 func checkDownloaderConfig() error {
-	cfg := G.Downloader
+	cfg := &G.Downloader
 	cfg.DownloadDir = strings.TrimSpace(cfg.DownloadDir)
 	if cfg.DownloadDir == "" {
 		return errors.New("下载目录不能为空")

@@ -10,9 +10,8 @@ import (
 )
 
 type CustomConfig struct {
-	Decoder    Decoder    `yaml:"decoder"`    // 解析器配置
-	Downloader Downloader `yaml:"downloader"` // 下载器配置
-	Hosts      []string   `yaml:"hosts"`      // 指定的域名列表
+	Decoder Decoder  `yaml:"decoder"` // 解析器配置
+	Hosts   []string `yaml:"hosts"`   // 指定的域名列表
 }
 
 // host2Decoder 保存每个 host 的定制化解析器配置
@@ -31,9 +30,7 @@ func checkCustomConfig() error {
 			return errors.Wrapf(err, "请检查定制化的解析器配置, index: %v", i)
 		}
 
-		// 2 TODO: 检查下载器配置
-
-		// 3 保存 host 映射
+		// 2 保存 host 映射
 		for _, host := range copyCustom.Hosts {
 			h := strings.TrimSpace(host)
 			if h == "" {
