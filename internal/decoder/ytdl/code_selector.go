@@ -8,10 +8,12 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util/mylog"
@@ -20,18 +22,42 @@ import (
 )
 
 const (
-	ResultPattern = `\[info\] Available formats for .*` // 用于匹配 youtube-dl 解析结果的正则表达式
-	StopInput     = "-1"                                // 当接收到用户的指定输入时，停止解析
+	ResultPattern     = `\[info\] Available formats for .*` // 用于匹配 youtube-dl 解析结果的正则表达式
+	FormatLinePattern = `\b(\d+(\.\d+)?[kKmMgG]i?[bB]?)\b`  // 格式化解析结果的正则表达式，去除大小信息
+	StopInput         = "-1"                                // 当接收到用户的指定输入时，停止解析
 )
 
 // CodeSelector 封装 youtube-dl 的解析方法
 type CodeSelector struct {
-	Url string
+	Url string // 要解析的 url 地址
+
+	formatLines []string // 解析结果行，包含 format code 和视频格式相关信息
 }
 
 // NewCodeSelector 初始化一个 format code 选择器
 func NewCodeSelector(url string) *CodeSelector {
 	return &CodeSelector{Url: url}
+}
+
+type FormatLineMap struct {
+	sync.Map
+}
+
+// host2FormatLines 保存解析 url 和解析结果行的映射
+var host2FormatLines FormatLineMap
+
+// Store 插入一个键值对到 FormatLineMap
+func (flm *FormatLineMap) Store(key string, val []string) {
+	flm.Map.Store(key, val)
+}
+
+// Load 从 FormatLineMap 中根据键返回值
+func (flm *FormatLineMap) Load(key string) []string {
+	val, ok := flm.Map.Load(key)
+	if !ok {
+		return []string{}
+	}
+	return val.([]string)
 }
 
 // RequestCode 用于调用 youtube-dl 请求视频的 format code 列表
@@ -59,6 +85,14 @@ out:
 			log.Println(mylog.PackMsg("", mylog.ANSIWarning, fmt.Sprintf("！！输入自定义的 format code 进行解析，输入空行可重新读取 code，输入 %s 放弃解析", StopInput)))
 			log.Println(mylog.PackMsg("", mylog.ANSIWarning, "请选择要解析的 format code："))
 
+			// 用户配置了记住视频格式 并且成功匹配上之前记录的视频格式
+			if code, ok := cs.UseRememberFormat(); ok {
+				log.Println()
+				log.Println(mylog.PackMsg("", mylog.ANSISuccess, fmt.Sprintf("通过上一次的选择格式成功匹配到 code: %v, 3 秒后进行解析...", code.Code)))
+				time.Sleep(time.Second * 3)
+				return code, nil
+			}
+
 			if !scanner.Scan() {
 				log.Println(mylog.PackMsg("", mylog.ANSIWarning, "读取输入失败，重新读取 format code..."))
 				continue out
@@ -75,16 +109,105 @@ out:
 
 			// 格式校验
 			codes := strings.Split(ip, "+")
+			success, fc := false, config.YtDlFormatCode{Code: ip}
 			if len(codes) == 1 {
-				return &config.YtDlFormatCode{Code: ip, ExpectedLinkNums: 1}, nil
+				success, fc.ExpectedLinkNums = true, 1
 			}
 			if len(codes) == 2 {
-				return &config.YtDlFormatCode{Code: ip, ExpectedLinkNums: 2}, nil
+				success, fc.ExpectedLinkNums = true, 2
 			}
 
-			log.Println(mylog.PackMsg("", mylog.ANSIWarning, "输入不合法，请重新输入"))
+			if !success {
+				log.Println(mylog.PackMsg("", mylog.ANSIWarning, "输入不合法，请重新输入"))
+				continue
+			}
+
+			// 保存用户选择的格式
+			cs.SaveFormat(codes)
+			return &fc, nil
 		}
 	}
+}
+
+// UseRememberFormat 根据之前的解析结果以及用户的选择，匹配出当前的 format code
+func (cs *CodeSelector) UseRememberFormat() (*config.YtDlFormatCode, bool) {
+	// 判断是否开启了 remember format 功能
+	rf := config.G.Decoder.YoutubeDL.CustomRememberFormat(cs.Url)
+	if rf != config.YoutubeDlRememberFormatActive {
+		return nil, false
+	}
+
+	// 解析 host
+	u, err := url.Parse(cs.Url)
+	if err != nil {
+		return nil, false
+	}
+
+	// 获取解析结果和上次用户选择
+	userChoices := host2FormatLines.Load(u.Host)
+	if len(userChoices) == 0 || len(cs.formatLines) == 0 {
+		return nil, false
+	}
+
+	// 构造 format code
+	codeBuilder, codeNum := new(strings.Builder), 0
+	vis := make([]bool, len(userChoices))
+out:
+	for _, formatLine := range cs.formatLines {
+		fls := strings.SplitN(formatLine, " ", 2)
+		for idx, userChoice := range userChoices {
+			if userChoice != fls[1] || vis[idx] {
+				continue
+			}
+			if codeBuilder.Len() > 0 {
+				codeBuilder.WriteString("+")
+			}
+			codeBuilder.WriteString(fls[0])
+			codeNum++
+			vis[idx] = true
+			continue out
+		}
+	}
+
+	// 匹配个数和用户选择的数量不一致
+	if codeNum != len(userChoices) {
+		return nil, false
+	}
+
+	return &config.YtDlFormatCode{Code: codeBuilder.String(), ExpectedLinkNums: codeNum}, true
+}
+
+// SaveFormat 接收并保存用户选择的格式
+func (cs *CodeSelector) SaveFormat(codes []string) {
+	if len(codes) == 0 || len(cs.formatLines) == 0 {
+		return
+	}
+
+	// 解析出 url 的 host
+	u, err := url.Parse(cs.Url)
+	if err != nil || u.Host == "" {
+		return
+	}
+
+	// 存放最终匹配成功的解析结果行
+	hFormatLines := []string{}
+
+	// 每个 code 匹配一个 format line
+out:
+	for _, formatLine := range cs.formatLines {
+		// 将 format line 分割成 code 和 视频格式
+		fls := strings.SplitN(formatLine, " ", 2)
+
+		for _, code := range codes {
+			if code != fls[0] {
+				continue
+			}
+			hFormatLines = append(hFormatLines, fls[1])
+			continue out
+		}
+	}
+
+	host2FormatLines.Store(u.Host, hFormatLines)
 }
 
 // ExecuteProcess 方法封装命令行程序的执行过程
@@ -122,6 +245,7 @@ func (cs *CodeSelector) PrintFormatCodes(raw string) {
 	warnPrefix, errPrefix := "WARNING", "ERROR"
 	scanner := bufio.NewScanner(strings.NewReader(raw))
 	regex := regexp.MustCompile(ResultPattern)
+	validFormatLines := []string{}
 	for scanner.Scan() {
 		res := scanner.Text()
 		if strings.HasPrefix(res, warnPrefix) || strings.HasPrefix(res, errPrefix) {
@@ -133,8 +257,46 @@ func (cs *CodeSelector) PrintFormatCodes(raw string) {
 		}
 		if flag {
 			log.Println(mylog.PackMsg("", mylog.ANSISuccess, res))
+			// 把解析结果原始行保存起来
+			if tfl, ok := cs.TransferFormatLine(res); ok {
+				validFormatLines = append(validFormatLines, tfl)
+			}
 		}
 	}
 
+	cs.formatLines = validFormatLines
+
 	log.Println(mylog.PackMsg("", mylog.ANSIWarning, "===== 解析地址："+cs.Url))
+}
+
+// TransferFormatLine 负责去掉 format line 中的文件大小信息以及多余的空格
+func (cs *CodeSelector) TransferFormatLine(line string) (string, bool) {
+	// 忽略起始行
+	if strings.HasPrefix(line, "ID") || strings.HasPrefix(line, "-") {
+		return "", false
+	}
+
+	res := new(strings.Builder)
+
+	// 格式化
+	reg := regexp.MustCompile(FormatLinePattern)
+	matches := reg.FindAllStringSubmatch(line, -1)
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		line = strings.ReplaceAll(line, match[1], "")
+	}
+
+	// 提取 format code
+	fields := strings.Fields(line)
+	if len(fields) < 1 {
+		return "", false
+	}
+	res.WriteString(fields[0])
+	res.WriteString(" ")
+
+	// 拼接后缀
+	res.WriteString(strings.Join(fields[1:], ","))
+	return res.String(), true
 }

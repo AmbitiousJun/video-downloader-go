@@ -10,6 +10,7 @@ decoder: # 解码器相关配置
   youtube-dl: # youtube-dl 解析器相关配置
     cookies-from: firefox # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
     format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
+    remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
   free-api: # 使用免费接口进行解析的相关配置
     use: JsonPlayer # 要使用的解析接口，必须和 decoder.free-api.apis 配置列表中的任意一个匹配
     apis: # 免费接口列表，格式：name,url
@@ -29,17 +30,6 @@ decoder: # 解码器相关配置
       - https://vz-asp83m00-ts2.immmm.top
       - https://upos-sz-mirrorcos.bilivideo.com/upgcxcode
     wait-seconds: 30 # 进入解析网站等待解析的时间
-  vip-fetch: # 提取视频网站资源相关配置（需要先开通相应的会员）⚠️：不建议使用这种方式了，使用 youtube-dl 更稳更方便
-    use: qy # 提取哪个视频网站
-    sites: # 视频网站配置
-      qy:
-        domain: .iqiyi.com # Cookie 用于哪个域名
-        cookies: # 视频网站的登录态 Cookie，格式：key,value
-          - yourKey,yourValue
-      yk:
-        domain: .youku.com
-        cookies:
-          - yourKey,yourValue
 
 downloader:
   use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
@@ -57,15 +47,19 @@ transfer:
 os: windows-x86
 
 # 针对不同的域名进行定制化配置
+# 目前只支持针对 decoder 进行定制化配置
+# 可配置的属性：use, resource-type, youtube-dl.cookies-from, youtube-dl.format-codes, youtube-dl.remember-format
 customs:
   - decoder: 
       use: youtube-dl
       youtube-dl:
         cookies-from: firefox
         format-codes:
-          - 1183
-    hosts:
+        remember-format: 1
+    hosts: # 对哪些域名生效，必须配置完整，有端口也要加上
       - www.mgtv.com
+      - www.youtube.com
+      - www.bilibili.com
   - decoder:
       use: none
       resource-type: m3u8

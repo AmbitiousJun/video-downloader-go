@@ -23,14 +23,20 @@ func TestCodeSelector(t *testing.T) {
 		os.Stdin = originStdIn
 		w.Close()
 	}()
-	w.Write([]byte("\n"))
-	w.Write([]byte("1234\n"))
+	w.Write([]byte("928\n"))
+	// w.Write([]byte("248+251\n"))
+	// w.Write([]byte("100050+30280\n"))
 
-	url := "https://www.mgtv.com/b/600010/20245077.html?fpa=1217&fpos=&lastp=ch_home"
-	slt := &ytdl.CodeSelector{Url: url}
-	if code, err := slt.RequestCode(); err != nil {
-		t.Error(err)
-	} else {
-		mylog.Successf("解析成功：%v", code)
+	url := "https://www.mgtv.com/b/593651/20291328.html"
+	// url = "https://www.youtube.com/watch?v=OfIFA-V6Zec"
+	// url = "https://www.bilibili.com/video/BV18e411B7HF"
+	slt := ytdl.NewCodeSelector(url)
+
+	for i := 0; i < 2; i++ {
+		if code, err := slt.RequestCode(); err != nil {
+			t.Error(err)
+		} else {
+			mylog.Successf("解析成功：%v", code)
+		}
 	}
 }

@@ -20,8 +20,14 @@ const (
 	ResourceM3U8 = "m3u8"
 )
 
-// 配置为 none 表示不注入 cookie
-const YoutubeDlCookieNone = "none"
+const (
+	// 配置为 none 表示不注入 cookie
+	YoutubeDlCookieNone = "none"
+	// 记住解析记录 激活
+	YoutubeDlRememberFormatActive = 1
+	// 记住解析记录 不激活
+	YoutubeDlRememberFormatDeactive = -1
+)
 
 type Decoder struct {
 	Use          string          `yaml:"use"`           // 使用哪种解析方式，可选值：none, youtube-dl
@@ -30,8 +36,9 @@ type Decoder struct {
 }
 
 type YoutubeDlConfig struct {
-	CookiesFrom    string   `yaml:"cookies-from"` // 从哪个浏览器获取 cookie
-	RawFormatCodes []string `yaml:"format-codes"` // 下载视频的编码
+	CookiesFrom    string   `yaml:"cookies-from"`    // 从哪个浏览器获取 cookie
+	RawFormatCodes []string `yaml:"format-codes"`    // 下载视频的编码
+	RememberFormat int      `yaml:"remember-format"` // 是否记住视频格式
 	FormatCodes    []*YtDlFormatCode
 }
 
@@ -116,7 +123,23 @@ func (dc *Decoder) checkFields(allowEmpty bool) error {
 		dc.YoutubeDL.CookiesFrom = YoutubeDlCookieNone
 	}
 
+	// 5 检查 youtube-dl 记住视频格式配置
+	if !dc.YoutubeDL.IsRememberFormatValid() && !allowEmpty {
+		return errors.New("remember format 配置错误，可选值: -1, 1")
+	}
+
 	return nil
+}
+
+// IsRememberFormatValid 检查对象中的 RememberFormat 属性是否有效
+func (c *YoutubeDlConfig) IsRememberFormatValid() bool {
+	validRfs := []int{YoutubeDlRememberFormatDeactive, YoutubeDlRememberFormatActive}
+	for _, valid := range validRfs {
+		if valid == c.RememberFormat {
+			return true
+		}
+	}
+	return false
 }
 
 // 检查 format code

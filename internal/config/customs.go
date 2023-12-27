@@ -87,6 +87,16 @@ func (y *YoutubeDlConfig) CustomFormatCodes(dcUrl string) []*YtDlFormatCode {
 	return targetDecoder.YoutubeDL.FormatCodes
 }
 
+// CustomRememberFormat 返回使用 youtube-dl 解析器是否自动记住上一次解析结果
+func (y *YoutubeDlConfig) CustomRememberFormat(dcUrl string) int {
+	targetDecoder := resolveDecoderByUrl(dcUrl, nil)
+	if targetDecoder == nil || !targetDecoder.YoutubeDL.IsRememberFormatValid() {
+		return y.RememberFormat
+	}
+
+	return targetDecoder.YoutubeDL.RememberFormat
+}
+
 // resolveDecoderByUrl 根据解析 url 返回解析器
 // 优先返回定制化配置解析器
 func resolveDecoderByUrl(dcUrl string, defaultDecoder *Decoder) *Decoder {
