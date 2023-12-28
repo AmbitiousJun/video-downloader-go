@@ -47,6 +47,7 @@ customs:
       youtube-dl:
         cookies-from: firefox
         format-codes:
+          - 100050+30280
         remember-format: 1
     hosts: # 对哪些域名生效，必须配置完整，有端口也要加上
       - www.mgtv.com
