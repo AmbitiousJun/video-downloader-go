@@ -17,6 +17,7 @@ import (
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mystring"
 
 	"github.com/pkg/errors"
 )
@@ -232,7 +233,7 @@ func (cs *CodeSelector) ExecuteProcess() error {
 		return errors.Wrap(err, "执行命令失败")
 	}
 
-	cs.PrintFormatCodes(string(output))
+	cs.PrintFormatCodes(mystring.UTF8(string(output)))
 	return nil
 }
 
