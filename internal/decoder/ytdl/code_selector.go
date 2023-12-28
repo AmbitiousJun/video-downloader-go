@@ -40,25 +40,31 @@ func NewCodeSelector(url string) *CodeSelector {
 	return &CodeSelector{Url: url}
 }
 
-type FormatLineMap struct {
+// UserChoice 记录用户选择
+type userChoice struct {
+	code   string // format code
+	format string // 视频格式
+}
+
+type userChoiceMap struct {
 	sync.Map
 }
 
-// host2FormatLines 保存解析 url 和解析结果行的映射
-var host2FormatLines FormatLineMap
+// host2UserChoice 保存解析 url 和用户选择结果的映射
+var host2UserChoice userChoiceMap
 
-// Store 插入一个键值对到 FormatLineMap
-func (flm *FormatLineMap) Store(key string, val []string) {
+// Store 插入一个键值对到 userChoiceMap
+func (flm *userChoiceMap) Store(key string, val []*userChoice) {
 	flm.Map.Store(key, val)
 }
 
 // Load 从 FormatLineMap 中根据键返回值
-func (flm *FormatLineMap) Load(key string) []string {
+func (flm *userChoiceMap) Load(key string) []*userChoice {
 	val, ok := flm.Map.Load(key)
 	if !ok {
-		return []string{}
+		return []*userChoice{}
 	}
-	return val.([]string)
+	return val.([]*userChoice)
 }
 
 // RequestCode 用于调用 youtube-dl 请求视频的 format code 列表
@@ -145,7 +151,7 @@ func (cs *CodeSelector) UseRememberFormat() (*config.YtDlFormatCode, bool) {
 	}
 
 	// 获取解析结果和上次用户选择
-	userChoices := host2FormatLines.Load(u.Host)
+	userChoices := host2UserChoice.Load(u.Host)
 	if len(userChoices) == 0 || len(cs.formatLines) == 0 {
 		return nil, false
 	}
@@ -156,14 +162,24 @@ func (cs *CodeSelector) UseRememberFormat() (*config.YtDlFormatCode, bool) {
 out:
 	for _, formatLine := range cs.formatLines {
 		fls := strings.SplitN(formatLine, " ", 2)
-		for idx, userChoice := range userChoices {
-			if userChoice != fls[1] || vis[idx] {
+		for idx, choice := range userChoices {
+			// 当前的 choice 已成功匹配
+			if vis[idx] {
 				continue
 			}
+
+			// 格式不匹配并且 code 也不匹配
+			if choice.code != fls[0] && choice.format != fls[1] {
+				continue
+			}
+
+			// 除了第 1 个 code 之外，其他的 code 之前需要拼接 +
 			if codeBuilder.Len() > 0 {
 				codeBuilder.WriteString("+")
 			}
 			codeBuilder.WriteString(fls[0])
+
+			// 计数，状态维护
 			codeNum++
 			vis[idx] = true
 			continue out
@@ -190,8 +206,8 @@ func (cs *CodeSelector) SaveFormat(codes []string) {
 		return
 	}
 
-	// 存放最终匹配成功的解析结果行
-	hFormatLines := []string{}
+	// 存放最终匹配成功的解析结果
+	userChoices := []*userChoice{}
 
 	// 每个 code 匹配一个 format line
 out:
@@ -203,12 +219,12 @@ out:
 			if code != fls[0] {
 				continue
 			}
-			hFormatLines = append(hFormatLines, fls[1])
+			userChoices = append(userChoices, &userChoice{code: fls[0], format: fls[1]})
 			continue out
 		}
 	}
 
-	host2FormatLines.Store(u.Host, hFormatLines)
+	host2UserChoice.Store(u.Host, userChoices)
 }
 
 // ExecuteProcess 方法封装命令行程序的执行过程

@@ -10,7 +10,6 @@ import (
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/decoder/ytdl"
-	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mystring"
 )
 
@@ -44,20 +43,22 @@ func TestCodeSelector(t *testing.T) {
 		os.Stdin = originStdIn
 		w.Close()
 	}()
-	w.Write([]byte("928\n"))
+	// w.Write([]byte("928\n"))
 	// w.Write([]byte("248+251\n"))
-	// w.Write([]byte("100050+30280\n"))
+	w.Write([]byte("100050+30280\n"))
 
-	url := "https://www.mgtv.com/b/593651/20291328.html"
-	// url = "https://www.youtube.com/watch?v=OfIFA-V6Zec"
-	// url = "https://www.bilibili.com/video/BV18e411B7HF"
-	slt := ytdl.NewCodeSelector(url)
+	urls := []string{
+		"https://www.bilibili.com/video/BV1LQ4y1V79r",
+		"https://www.bilibili.com/video/BV1R64y1j7N2",
+	}
 
-	for i := 0; i < 2; i++ {
+	for _, url := range urls {
+		slt := ytdl.NewCodeSelector(url)
 		if code, err := slt.RequestCode(); err != nil {
 			t.Error(err)
+			return
 		} else {
-			mylog.Successf("解析成功：%v", code)
+			log.Println("解析成功", code)
 		}
 	}
 }
