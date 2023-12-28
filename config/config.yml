@@ -1,36 +1,15 @@
-# 注意⚠️：这只是一个示例的配置文件，请先拷贝一份并命名为 config.yml 再进行使用
-
-selenium: # selenium 模拟器相关配置
-  chrome-driver-path: /Users/ambitious/App/chromedriver_mac_arm64/chromedriver # ChromeDriver 在本地的路径
-  show-window: false # 运行程序时，是否实时显示模拟浏览器窗口
-
-decoder: # 解码器相关配置
-  use: none # 使用哪种解析方式，可选值：none, free-api, vip-fetch, youtube-dl，若使用 youtube-dl，resource-type 会被忽略
+# 解析器配置
+#
+# 注：在 windows 平台下使用 youtube-dl 解析器时，从 chrome, edge 等浏览器获取 cookie 有可能会失败，换成 firefox 即可
+decoder:
+  use: none # 使用哪种解析方式，可选值：none, youtube-dl，若使用 youtube-dl，resource-type 会被忽略
   resource-type: m3u8 # 解析出来的文件类型，可选值：mp4, m3u8
   youtube-dl: # youtube-dl 解析器相关配置
     cookies-from: firefox # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
     format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
     remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
-  free-api: # 使用免费接口进行解析的相关配置
-    use: JsonPlayer # 要使用的解析接口，必须和 decoder.free-api.apis 配置列表中的任意一个匹配
-    apis: # 免费接口列表，格式：name,url
-      - JsonPlayer,https://jx.jsonplayer.com/player/?url=
-      - XiaMi,https://jx.xmflv.com/?url=
-      - Mao,https://www.mtosz.com/player/Mao.php?code=Mao&if=1&url=
-      - Ok,https://okjx.cc/?url=
-      - Direct,
-    valid-url-prefixes: # 各大视频网站解析出来的资源地址前缀
-      - om.tc.qq.com
-      - gtimg.com
-      - https://cache.m3u8.pw/Cache/qq
-      - https://videocut-upload-sz.oss-cn-shenzhen.aliyuncs.com
-      - https://cache.xmflv.cc:4433/Cache/qq
-      - https://sluiceyf.titan.mgtv.com
-      - https://pcvideoaliyun.titan.mgtv.com
-      - https://vz-asp83m00-ts2.immmm.top
-      - https://upos-sz-mirrorcos.bilivideo.com/upgcxcode
-    wait-seconds: 30 # 进入解析网站等待解析的时间
 
+# 下载器配置
 downloader:
   use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
   task-thread-count: 1 # 处理下载任务的线程个数
@@ -40,13 +19,26 @@ downloader:
   ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
   rate-limit: 5mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
 
+# ts 转换器配置
+#
+# 正常情况下，该配置不需要变动
 transfer:
   use: ffmpeg # 要选用哪个转码器，可选值：ffmpeg
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
+# 在什么平台上运行
+#
+# 这个配置的作用是为了匹配 ffmpeg 和 youtube-dl 的可执行文件
+# 举个例子：在 config/ffmpeg 目录下，有一个 ffmpeg-windows-x86.exe 的 ffmpeg 可执行文件
+# 那么 os 就配置为 windows-x86, 程序会自动去 config 目录中找
+# 
+# 默认自带 macos 和 windows-x86 的可执行文件，如果程序无法正常运行，需要手动下载好自己系统匹配的格式并放到相应目录下
+# ffmpeg: https://ffmpeg.org/download.html
+# youtube-dl: https://github.com/yt-dlp/yt-dlp/releases
 os: windows-x86
 
 # 针对不同的域名进行定制化配置
+# 
 # 目前只支持针对 decoder 进行定制化配置
 # 可配置的属性：use, resource-type, youtube-dl.cookies-from, youtube-dl.format-codes, youtube-dl.remember-format
 customs:
