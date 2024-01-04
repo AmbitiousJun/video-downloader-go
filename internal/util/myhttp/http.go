@@ -120,16 +120,16 @@ func DownloadWithRateLimit(request *http.Request, destPath string) (int64, error
 			if code == 416 {
 				return -1, errors.New("检测到 416 错误码")
 			}
-			util.PrintRetryError(fmt.Sprintf("错误码：%v", code), nil, 2)
+			util.PrintRetryError(fmt.Sprintf("错误码：%v", code), err, 2)
 			continue
 		}
 		if resp.Body == nil {
-			util.PrintRetryError("响应体为空", nil, 2)
+			util.PrintRetryError("响应体为空", err, 2)
 			continue
 		}
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			util.PrintRetryError("读取数据异常", nil, 2)
+			util.PrintRetryError("读取数据异常", err, 2)
 			continue
 		}
 		// 3 将请求下来的文件分片，定位写入到目标文件中
