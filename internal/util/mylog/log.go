@@ -103,7 +103,7 @@ func printLog(li *logItem) {
 }
 
 // 输出当前队列中的所有日志
-func printAllLogs() {
+func PrintAllLogs() {
 	for HasLog() {
 		item := lq.pollFirst()
 		printLog(item)
@@ -128,7 +128,7 @@ func listenAndPrintLogs(logInit chan struct{}) {
 		select {
 		case <-ctx.Done():
 			// 程序终止信号，输出所有的日志
-			printAllLogs()
+			PrintAllLogs()
 			return
 		default:
 			if !HasLog() || blockFlag {

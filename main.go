@@ -39,6 +39,9 @@ func main() {
 	}
 	downloadList := new(meta.TaskDeque[meta.Download])
 
+	// 输出初始化日志
+	mylog.PrintAllLogs()
+
 	// 开启解析任务
 	decoder.ListenAndDecode(decodeList, func(d *meta.Download) {
 		downloadList.OfferLast(d)

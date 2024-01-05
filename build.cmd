@@ -17,7 +17,7 @@ set platforms[5]=windows/arm64
 
 
 REM 版本号
-set version=1.1.1
+set version=1.1.2
 
 REM 遍历数组并执行操作
 for /l %%i in (0,1,5) do (
