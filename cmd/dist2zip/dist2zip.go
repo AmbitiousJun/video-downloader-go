@@ -17,10 +17,11 @@ import (
 const (
 	WindowsFileSuffix = ".exe"
 
-	DistDir   = "../../dist"                   // 存放打包完成的可执行文件路径
-	ConfigDir = "../../config"                 // 配置文件目录
-	OutputDir = "C:/Users/Ambitious/Downloads" // zip 输出目录
-	ExecName  = "start"                        // 可执行文件名称
+	DistDir   = "../../dist"                 // 存放打包完成的可执行文件路径
+	ConfigDir = "../../config"               // 配置文件目录
+	OutputDir = "/Users/ambitious/Downloads" // zip 输出目录
+	// OutputDir = "C:/Users/Ambitious/Downloads" // zip 输出目录
+	ExecName = "start" // 可执行文件名称
 )
 
 // 需要打包的平台
