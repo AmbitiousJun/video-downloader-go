@@ -2,6 +2,7 @@ package m3u8_test
 
 import (
 	"fmt"
+	"log"
 	"testing"
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/config"
@@ -41,4 +42,15 @@ func TestCheckM3U8(t *testing.T) {
 	if !res {
 		t.Fail()
 	}
+}
+
+// 测试解析 EXT-X-MAP 头
+func TestResolveXMap(t *testing.T) {
+	line := `#EXT-X-MAP:URI="F0D8437719A36EBD4048C8534EC67035_0_0_0_fmp4.mp4?arange=0&pm=8a5FBb0qCpf~NUGyCxwPC7gKlAjZ3ToeO0hmkUwQPOV_qKadzWLybjh9w5lQaGE86GfEnC5Pqv70cacMEukhUnyDA0O8zWtCueUbMfZryI8GHrK2oQZyHgpo1JlWY7zfbjVfzgAqrpdEzkC4DP_KeQiGLSSVu8wejY462GU0QJ3tQRI6dj_~S8OIO2drR~e5yxksqgntxfPmwGMct0MIaTDTcefFUiFMNM2wYn~pz4eiDAlpr~vqB2BoSreoVHw0VBzNZxsBFmCtocm1o5m0iqfzLipiiokhANUVgFWb28waNNPWYwbKEWr4F6wnLyAuLh7TVm85qwGIcEeRz5IWjKsNZxtq86T9TZzybvJ18QXqH3IgagEcVKN3hXX_lWLbUpyojgEEn1_ipWLokFMtfVfjmGG_qVkN&mr=V0AY~7bxWVVgbvsSQ100takUSjINTtL7BVb7FZ3LXJSldCvVEeeN3VEl9CXIJxdM1P3Nikv0tsEt8HLnd8xYJ6M6pULaMkIpZH5ZPGO3SCTkmHIQqyVTghAf0vV8uufq5yVyw2deo6JTJh7WFptP73jqwt5VOE1Sgcjfc0BD5YUiDU91QhfTuZ5SOtpEFaFKyW_KbZrnKrDWJRT~Fp8LuMNqMMBy14JO6nLWP~s7NbXPZsXfVwe40AnvQ~BxLUrMsYAnqdVTtCi6USlu4Q4QYzNmehsJhlv~WFbArM4poEzjFk0f8qSkran54vENtlX3QUv3mpC9MqjrIUNeREpNfldNHkagACFM9U3Pq4FD7ar0Q1jMxuEYgTZwnsCxaysM_pDQ9tVGcv~1tPHR0jKgJMGcH2TKf5H0XF_dxj_bBzPpmpmPKQn0wUbWkF8qyqfmBr5aas3_967UoFdiRAxZP1HlAkD5hseRMVfT0U95Hn4PMtjsBB4D9ofd4vRUjabysB6975pP3SXtIge9dpXIHqh1VDJB7rQLJuSrvAvLY9jEHVWqbaijeGOYSRldOjR9tS5rSSoFTATbOg9~4fAftiH8~Jxsi8lP44xsHhHLL4m4~FmhGR0LmlTxNxhdyH572KJ1Ro~FUEmjcuDh7jhBKQ--&uid=null&scid=25021&cpno=6i06rp&ruid=e01d0afeb25942bc&sh=1&ftc=webO1&sftc=v6.7.46ds1_vtpVOD"`
+	hi, err := m3u8.ResolveXMap(line)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	log.Println(hi)
 }

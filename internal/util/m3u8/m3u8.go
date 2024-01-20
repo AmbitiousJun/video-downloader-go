@@ -129,17 +129,20 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 	if !CheckM3U8(m3u8Url, headers) {
 		return nil, errors.New("不是规范的 m3u8 地址")
 	}
+
 	// 1 找到后缀的位置
 	queryPos := strings.Index(m3u8Url, "?")
 	if queryPos == -1 {
 		queryPos = len(m3u8Url)
 	}
+
 	// 2 找到后缀之前的第一个 '/'
 	lastSepPos := strings.LastIndex(m3u8Url[:queryPos], "/")
 	if lastSepPos == -1 {
 		return nil, errors.New("m3u8 地址不规范")
 	}
 	baseUrl := m3u8Url[:lastSepPos]
+
 	// 3 读取 m3u8 信息
 	client := myhttp.TimeoutHttpClient()
 	for {
@@ -162,20 +165,37 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 			continue
 		}
 		defer resp.Body.Close()
+
+		// 逐行扫描 m3u8 文件，将 ts 分片封装成 meta 对象
 		scanner := bufio.NewScanner(resp.Body)
 		ans := []*TsMeta{}
+		xMapUrl := ""
 		for scanner.Scan() {
+			mt := TsMeta{Index: len(ans) + 1}
 			line := scanner.Text()
+
+			// 判断是否是 X-MAP Head 头
+			if strings.HasPrefix(line, ExtXMap) {
+				if hi, err := ResolveXMap(line); err == nil {
+					xMapUrl = baseUrl + "/" + hi.Uri
+				}
+			}
+			mt.HeadUrl = xMapUrl
+
 			if strings.HasPrefix(line, "#") || strings.TrimSpace(line) == "" {
 				// 去除注释和空行
 				continue
 			}
+
 			if !strings.HasPrefix(line, NetworkLinkPrefix) {
 				// 补充 baseUrl
 				line = baseUrl + "/" + line
 			}
-			ans = append(ans, &TsMeta{Url: line, Index: len(ans) + 1})
+			mt.Url = line
+
+			ans = append(ans, &mt)
 		}
+
 		return ans, nil
 	}
 }

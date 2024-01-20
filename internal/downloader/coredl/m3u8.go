@@ -3,7 +3,6 @@ package coredl
 
 import (
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -64,26 +63,21 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 	}
 	// 3 执行下载
 	downloadTsMeta := func(tmt *m3u8.TsMeta) {
+		// 通过外部函数的 err 对象来传递错误
 		var tmpErr error
 		defer func() {
 			err = util.AnyError(err, tmpErr)
 		}()
-		// 通过外部函数的 err 对象来传递错误
+
 		tsPath := filepath.Join(tempDirPath, fmt.Sprintf(TsFilenameFormat, tmt.Index))
-		var req *http.Request
-		req, tmpErr = http.NewRequest(http.MethodGet, tmt.Url, nil)
-		if tmpErr != nil {
-			tmpErr = errors.Wrapf(tmpErr, "构造请求时出现异常：%v", dmt.FileName)
-			return
-		}
-		for k, v := range dmt.HeaderMap {
-			req.Header.Add(k, v)
-		}
+		th := NewTsHandler(tmt, tsPath, dmt.HeaderMap)
+
 		var dn int64
-		if dn, tmpErr = myhttp.DownloadWithRateLimit(req, tsPath); tmpErr != nil {
+		if dn, tmpErr = th.Download(); tmpErr != nil {
 			tmpErr = errors.Wrapf(tmpErr, "分片下载异常：%v", dmt.FileName)
 			return
 		}
+
 		// 每个分片下载完成的时候调用进度监听器
 		atomic.AddInt64(&current, 1)
 		atomic.AddInt64(&currentBytes, dn)

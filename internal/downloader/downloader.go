@@ -75,10 +75,11 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 
 		// 下载出现异常，检查是否有下载一半的文件，将其删除
 		myfile.DeleteAnyFileContainsPrefix(dmt.FileName)
+		// 恢复原始的下载文件名
+		dmt.FileName = originFilename
 
 		// 下载失败，无效的 m3u8
 		if strings.Contains(err.Error(), UnValidM3U8) {
-			dmt.FileName = originFilename
 			mylog.Warnf("下载失败：%v, 重新添加到解析任务中，视频名称：%v", err, dmt.FileName)
 			// 触发下载异常
 			dlErrorHandler(dmt)

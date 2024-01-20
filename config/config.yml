@@ -12,12 +12,12 @@ decoder:
 # 下载器配置
 downloader:
   use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
-  task-thread-count: 1 # 处理下载任务的线程个数
-  dl-thread-count: 32 # 多线程下载的线程个数
-  # download-dir: /Users/ambitious/Downloads # 视频文件下载位置
-  download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
+  task-thread-count: 2 # 处理下载任务的线程个数
+  dl-thread-count: 12 # 多线程下载的线程个数
+  download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+  # download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
   ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
-  rate-limit: 5mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
+  rate-limit: -1 # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
 
 # ts 转换器配置
 #
@@ -35,7 +35,7 @@ transfer:
 # 默认自带 macos 和 windows-x86 的可执行文件，如果程序无法正常运行，需要手动下载好自己系统匹配的格式并放到相应目录下
 # ffmpeg: https://ffmpeg.org/download.html
 # youtube-dl: https://github.com/yt-dlp/yt-dlp/releases
-os: windows-x86
+os: macos
 
 # 针对不同的域名进行定制化配置
 # 
@@ -47,7 +47,6 @@ customs:
       youtube-dl:
         cookies-from: firefox
         format-codes:
-          - 100050+30280
         remember-format: 1
     hosts: # 对哪些域名生效，必须配置完整，有端口也要加上
       - www.mgtv.com
@@ -58,3 +57,5 @@ customs:
       resource-type: m3u8
     hosts:
       - apd-vlive.apdcdn.tc.qq.com
+      - pcvideoaliyun.titan.mgtv.com
+      - pcvideotx.titan.mgtv.com
