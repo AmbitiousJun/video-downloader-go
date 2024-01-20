@@ -5,7 +5,7 @@ decoder:
   use: none # 使用哪种解析方式，可选值：none, youtube-dl，若使用 youtube-dl，resource-type 会被忽略
   resource-type: m3u8 # 解析出来的文件类型，可选值：mp4, m3u8
   youtube-dl: # youtube-dl 解析器相关配置
-    cookies-from: firefox # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
+    cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
     format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
     remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
 
@@ -45,7 +45,7 @@ customs:
   - decoder: 
       use: youtube-dl
       youtube-dl:
-        cookies-from: firefox
+        cookies-from: chrome
         format-codes:
         remember-format: 1
     hosts: # 对哪些域名生效，必须配置完整，有端口也要加上
