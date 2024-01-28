@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"strings"
+	"sync/atomic"
 	"time"
 	"video-downloader-go/internal/appctx"
 )
@@ -27,6 +28,9 @@ var lq = new(logQueue)
 
 // 日志阻塞标志
 var blockFlag = false
+
+// 标记最后一次输出日志时是否是下载日志
+var downloadLogFlag atomic.Bool
 
 // 判断当前队列中是否还有日志
 func HasLog() bool {
@@ -99,6 +103,11 @@ func printLog(li *logItem) {
 	if li == nil {
 		return
 	}
+
+	// 如果当前日志是下载日志的结尾, 就进行标记
+	// 这里无需使用锁同步, 因为系统所有日志都是通过同一个协程逐条输出的, 不存在协程安全问题
+	downloadLogFlag.Store(isDownloadLogEnd(li))
+
 	log.Println(li)
 }
 

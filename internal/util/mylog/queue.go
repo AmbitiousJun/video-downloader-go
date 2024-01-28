@@ -44,3 +44,22 @@ func (lq *logQueue) offerLast(item *logItem) {
 	defer mu.Unlock()
 	lq.items = append(lq.items, item)
 }
+
+// 往队列的末尾批量添加元素
+func (lq *logQueue) offerLastAll(items ...*logItem) {
+	mu.Lock()
+	defer mu.Unlock()
+	lq.items = append(lq.items, items...)
+}
+
+// 返回队列最后一个元素, 不弹出
+func (lq *logQueue) peekLast() *logItem {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	if lq.Len() == 0 {
+		return nil
+	}
+
+	return lq.items[lq.Len()-1]
+}

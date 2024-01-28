@@ -17,7 +17,7 @@ downloader:
   download-dir: /Users/ambitious/Downloads # 视频文件下载位置
   # download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
   ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
-  rate-limit: -1 # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
+  rate-limit: 5mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
 
 # ts 转换器配置
 #

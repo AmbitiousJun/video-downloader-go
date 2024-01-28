@@ -52,6 +52,9 @@ func ListenAndDownload(list *meta.TaskDeque[meta.Download], completeOne Complete
 func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlErrorHandler, offerBack func(*meta.Download)) {
 
 	dlpool.SubmitTask(func() {
+		dlLog := mylog.NewDownloadLog()
+		defer dlLog.Invalidate()
+
 		originFilename := dmt.FileName
 		link := dmt.Link
 		fileName := fmt.Sprintf("%s%s%s.mp4", config.G.Downloader.DownloadDir, string(filepath.Separator), originFilename)
@@ -61,7 +64,7 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 		// 初始化下载器并下载
 		cdl := initCoreDownloader(dmt.OriginUrl)
 		err := cdl.Exec(dmt, func(p *coredl.Progress) {
-			printDownloadProgress(dmt.FileName, p)
+			printDownloadProgress(dlLog, dmt.FileName, p)
 		})
 
 		// 下载成功
