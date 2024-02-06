@@ -11,6 +11,8 @@ import (
 const (
 	// 日志输出前缀长度：'2023/12/17 01:15:15 SUCCESS '
 	SuccessLogPrefixSize = 28
+	// 日志输出前缀长度：'2023/12/17 01:15:15 PROGRESS '
+	ProgressLogPrefixSize = 29
 )
 
 // getTerminalSizeErrorOnce 用于控制只输出一次错误信息

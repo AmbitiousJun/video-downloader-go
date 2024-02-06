@@ -13,11 +13,12 @@ import (
 
 // 日志颜色输出常量
 const (
-	ANSIInfo    = "\x1b[38;2;90;156;248m"
-	ANSISuccess = "\x1b[38;2;126;192;80m"
-	ANSIWarning = "\x1b[38;2;220;165;80m"
-	ANSIDanger  = "\x1b[38;2;228;116;112m"
-	ANSIReset   = "\x1b[0m"
+	ANSIInfo     = "\x1b[38;2;90;156;248m"
+	ANSISuccess  = "\x1b[38;2;126;192;80m"
+	ANSIWarning  = "\x1b[38;2;220;165;80m"
+	ANSIDanger   = "\x1b[38;2;228;116;112m"
+	ANSIProgress = "\x1b[38;2;160;186;250m"
+	ANSIReset    = "\x1b[0m"
 )
 
 // 日志队列的最大长度
@@ -84,6 +85,16 @@ func Warn(logMsg string) {
 
 // 格式化输出一条 warn 日志
 func Warnf(format string, args ...interface{}) {
+	Warn(fmt.Sprintf(format, args...))
+}
+
+// 添加一条 progress 日志到队列中
+func Progress(logMsg string) {
+	lq.offerLast(PackMsg("PROGRESS", ANSIProgress, logMsg))
+}
+
+// 格式化输出一条 progress 日志
+func Progressf(format string, args ...interface{}) {
 	Warn(fmt.Sprintf(format, args...))
 }
 

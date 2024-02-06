@@ -54,17 +54,6 @@ func (dc *Decoder) CustomUse(dcUrl string) string {
 	return targetDecoder.Use
 }
 
-// CustomResourceType 返回一个媒体类型
-// 优先返回定制化配置
-func (dc *Decoder) CustomResourceType(dcUrl string) string {
-	targetDecoder := resolveDecoderByUrl(dcUrl, dc)
-	if targetDecoder == nil || targetDecoder.ResourceType == "" {
-		return dc.ResourceType
-	}
-
-	return targetDecoder.ResourceType
-}
-
 // CustomCookiesFrom 返回一个 youtube-dl 的 cookie 来源
 // 优先返回定制化配置
 func (y *YoutubeDlConfig) CustomCookiesFrom(dcUrl string) string {
@@ -95,6 +84,15 @@ func (y *YoutubeDlConfig) CustomRememberFormat(dcUrl string) int {
 	}
 
 	return targetDecoder.YoutubeDL.RememberFormat
+}
+
+// CustomHeadless 返回使用 chromedriver 时是否开启无头模式
+func (c *CatCatchConfig) CustomHeadless(dcUrl string) int {
+	targetDecoder := resolveDecoderByUrl(dcUrl, nil)
+	if targetDecoder == nil || !targetDecoder.CatCatch.IsHeadlessValid() {
+		return c.Headless
+	}
+	return targetDecoder.CatCatch.Headless
 }
 
 // resolveDecoderByUrl 根据解析 url 返回解析器

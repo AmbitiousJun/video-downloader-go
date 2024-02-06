@@ -13,6 +13,7 @@ import (
 	"video-downloader-go/internal/downloader/dlpool"
 	"video-downloader-go/internal/downloader/ytdl"
 	"video-downloader-go/internal/meta"
+	"video-downloader-go/internal/util/m3u8"
 	"video-downloader-go/internal/util/myfile"
 	"video-downloader-go/internal/util/mylog"
 )
@@ -62,7 +63,7 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 		mylog.Infof("监听到下载任务，文件名：%v，下载地址：%v", fileName, link)
 
 		// 初始化下载器并下载
-		cdl := initCoreDownloader(dmt.OriginUrl)
+		cdl := initCoreDownloader(dmt)
 		err := cdl.Exec(dmt, func(p *coredl.Progress) {
 			printDownloadProgress(dlLog, dmt.FileName, p)
 		})
@@ -94,16 +95,21 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 
 // initCoreDownloader 根据全局配置初始化下载器对象
 // 优先匹配定制化配置
-func initCoreDownloader(dcUrl string) coredl.Downloader {
+func initCoreDownloader(dmt *meta.Download) coredl.Downloader {
 
 	// 如果是通过 youtube-dl 解析的，就使用适配的下载器
-	if config.G.Decoder.CustomUse(dcUrl) == config.DecoderYoutubeDl {
+	if config.G.Decoder.CustomUse(dmt.OriginUrl) == config.DecoderYoutubeDl {
 		return ytdl.New()
 	}
 
 	// 获取配置
-	resource := config.G.Decoder.CustomResourceType(dcUrl)
 	dlType := config.G.Downloader.Use
+
+	// 识别资源类型
+	resource := config.ResourceMP4
+	if m3u8.CheckM3U8(dmt.Link, dmt.HeaderMap) {
+		resource = config.ResourceM3U8
+	}
 
 	// 生成对象
 	switch resource + dlType {

@@ -17,10 +17,13 @@ import (
 const (
 	WindowsFileSuffix = ".exe"
 
-	DistDir   = "../../dist"                 // 存放打包完成的可执行文件路径
-	ConfigDir = "../../config"               // 配置文件目录
+	DistDir   = "../../dist"   // 存放打包完成的可执行文件路径
+	ConfigDir = "../../config" // 配置文件目录
+	LibDir    = "../../lib"    // 依赖目录
+
 	OutputDir = "/Users/ambitious/Downloads" // zip 输出目录
 	// OutputDir = "C:/Users/Ambitious/Downloads" // zip 输出目录
+
 	ExecName = "start" // 可执行文件名称
 )
 
@@ -110,7 +113,12 @@ func createZip(zipPath, execPath string) {
 	}
 
 	// 添加配置目录
-	err = addDirToZip(zipWriter, ConfigDir, "config")
+	if err = addDirToZip(zipWriter, ConfigDir, "config"); err != nil {
+		return
+	}
+
+	// 添加依赖目录
+	err = addDirToZip(zipWriter, LibDir, "lib")
 }
 
 func addDirToZip(zipWriter *zip.Writer, fileName, zipName string) error {

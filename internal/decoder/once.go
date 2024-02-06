@@ -5,6 +5,7 @@ package decoder
 import (
 	"sync"
 	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/decoder/catcatch"
 	"video-downloader-go/internal/decoder/ytdl"
 )
 
@@ -18,14 +19,14 @@ var decoderMap map[string]*DecoderHolder
 // 初始化 decoderMap
 func init() {
 	decoderMap = map[string]*DecoderHolder{
-		config.DecoderYoutubeDl: {},
+		config.DecoderYoutubeDl:  {},
+		config.DecoderCatCatchTx: {},
 	}
 }
 
 // GetDecoder 根据传递的解析器类型返回一个解析器对象
 func GetDecoder(use string) D {
 	holder, ok := decoderMap[use]
-
 	if !ok {
 		return nil
 	}
@@ -37,6 +38,13 @@ func GetDecoder(use string) D {
 	if use == config.DecoderYoutubeDl {
 		holder.Once.Do(func() {
 			holder.dcd = new(ytdl.Decoder)
+		})
+		return holder.dcd
+	}
+
+	if use == config.DecoderCatCatchTx {
+		holder.Once.Do(func() {
+			holder.dcd = new(catcatch.TxDecoder)
 		})
 		return holder.dcd
 	}

@@ -2,25 +2,19 @@
 
 这是 [video-downloader](https://github.com/AmbitiousJun/video-downloader) 的 Go 实现版本
 
-
-
 ## 特点
 
 1. 打包之后体积更小，无需 JVM 环境也能使用
 
-2. 功能基本上都迁移过来了，解析器只实现了 youtube-dl，与 Selenium 有关的解析器还没有实现
+2. 采用 [chromedp](https://github.com/chromedp/chromedp?tab=readme-ov-file) 作为替代 Selenium 的解决方案，目前实现了 Tx 解析器
 
 3. 美化终端输出
-
-
 
 ## 概述
 
 使用 Go 语言编写的多线程视频下载器，适配 “爱优腾芒”。开发这个项目的目的就是为了**批量下载**视频的时候解放双手，不需要手动转换 m3u8，也不需要等到视频下载完成之后再去一个一个改名。
 
 一句话总结这个项目：类似 docker-compose，本项目就是将下载的任务以及下载方式提前通过配置的方式编排好，然后启动程序自动下载。
-
-
 
 ## 适用场景
 
@@ -34,8 +28,6 @@
 ## 技术栈
 
 - Go
-
-
 
 ## 安装&使用
 
@@ -255,3 +247,58 @@ customs:
 ```
 
 > 注：目前仅支持对解析器进行定制化配置
+
+8. 使用猫抓解析器解析 Tx 资源
+
+借助 [chromedp](https://github.com/chromedp/chromedp?tab=readme-ov-file) 和 [cat-catch](https://github.com/xifangczy/cat-catch) 实现了一个 Tx 资源解析器 (cat-catch:tx)，下面介绍一下怎么使用
+
+> 注：
+> 1. 该解析器依赖于 Chrome 浏览器
+> 2. 该解析器在 video-downloader-go `v1.3.0` 版本之后加入支持
+> 3. 建议迫不得已情况下才使用猫抓解析器，因为失败率较高
+
+首先，Chrome 浏览器安装好 `EditThisCookie` 插件（没有科学上网环境的话用 Edge 浏览器也可以）
+
+![image-20240206173539587](https://ambitious-bucket1-1305921962.cos.ap-guangzhou.myqcloud.com/imgs/image-20240206173539587.png)
+
+接着，打开 TX 首页，登录账号
+
+登录完成后刷新页面
+
+点击 `EditThisCookie` 插件，会展示出当前网站下的 Cookie 数据：
+
+![image-20240206173716543](https://ambitious-bucket1-1305921962.cos.ap-guangzhou.myqcloud.com/imgs/image-20240206173716543.png)
+
+点击工具栏最右侧的 `扳手🔧` 图标，进入插件设置页面
+
+点击左侧的选项栏，将 Cookie 导出格式设置为 JSON 格式：
+
+![image-20240206173849879](https://ambitious-bucket1-1305921962.cos.ap-guangzhou.myqcloud.com/imgs/image-20240206173849879.png)
+
+回到 TX 网站页面，这里有一个注意点，在 `EditThisCookie` 插件弹框中，默认抓取的是 `v.qq.com` 域名下的 Cookie，只使用它们不足以恢复登录态，需要手动编辑输入框，去掉 `v.` 二级域名前缀，这时显示的 Cookie 信息才是完整的：
+
+![image-20240206174209242](https://ambitious-bucket1-1305921962.cos.ap-guangzhou.myqcloud.com/imgs/image-20240206174209242.png)
+
+点击插件工具栏倒数第三个按钮，将 Cookie 信息导出到剪贴板中，新建一个文本文件，将 Cookie 信息粘贴进去即可，可先将该文件的 **绝对路径** 保存下来备用
+
+在 video-downloader-go 的配置文件下，修改解析器的配置如下：
+
+```yml
+# 解析器配置
+#
+# 注：在 windows 平台下使用 youtube-dl 解析器时，从 chrome, edge 等浏览器获取 cookie 有可能会失败，换成 firefox 即可
+decoder:
+  use: cat-catch:tx # 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx
+  cat-catch: # 猫抓解析器
+    headless: 1 # 是否开启无头模式, 可选值: -1, 1
+    sites: # 针对不同的网站分别实现猫抓解析器
+      tx:
+        cookie-json-path: /Users/ambitious/Desktop/学习/Go/projects/video-downloader-go/cookie-files/tx.json # Cookie 文件绝对路径
+        video-format: uhd # 视频格式, 可选值: sd, hd, shd, fhd, uhd, hdr10
+```
+
+将 `decoder.cat-catch.sites.tx.cookie-json-path` 替换为刚刚保存下来的 JSON 文件的绝对路径，最后运行程序即可使用猫抓解析器解析 TX 视频了
+
+> 注：
+>
+> `decoder.cat-catch.headless` 配置通常保持 1 即可，意思是在解析的时候不打开 Chrome GUI 界面，但如果程序报错无法切换清晰度，可能是程序被网站检测出自动化了，可以尝试将该配置设置为 -1 后重新运行程序
