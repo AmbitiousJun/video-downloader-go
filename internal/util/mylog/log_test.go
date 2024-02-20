@@ -1,7 +1,9 @@
 package mylog_test
 
 import (
+	"sync"
 	"testing"
+	"time"
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/util/mylog"
 )
@@ -19,15 +21,26 @@ func TestDownloadLog(t *testing.T) {
 	defer appctx.WaitGroup().Wait()
 	defer appctx.CancelFunc()()
 
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	var d *mylog.DownloadLog
 	for i := 1; i <= 3; i++ {
 		dl := mylog.NewDownloadLog()
-		dl.Success("文件名: .....")
-		dl.Success("下载进度: ....")
-		dl.Success("进度条: ...")
-
-		if i == 3 {
-			dl.Trigger()
-		}
+		dl.Progress("文件名: .....")
+		dl.Progress("下载进度: ....")
+		dl.Progress("进度条: ...")
+		dl.Trigger()
+		d = dl
 	}
 
+	for i := 1; i <= 1000; i++ {
+		wg.Add(1)
+		currentI := i
+		go func() {
+			defer wg.Done()
+			time.Sleep(time.Millisecond * time.Duration(currentI))
+			d.Trigger()
+		}()
+	}
 }
