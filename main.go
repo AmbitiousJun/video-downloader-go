@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -16,9 +17,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+const CurrentVersion = "1.3.2"
+
 func main() {
 	defer appctx.WaitGroup().Wait()
 	defer appctx.CancelFunc()()
+
+	printBanner()
+	fmt.Println("Current Version: ", CurrentVersion)
 
 	// 读取配置
 	err := config.Load("")
@@ -62,6 +68,15 @@ func main() {
 	})
 	downloadWg.Wait()
 	mylog.Success("所有任务处理完成")
+}
+
+// printBanner 输出 banner
+func printBanner() {
+	bannerBytes, err := os.ReadFile("config/banner.txt")
+	if err != nil {
+		return
+	}
+	fmt.Println(string(bannerBytes))
 }
 
 // readVideoData 读取用户在 config/data.txt 目录下配置的输入数据
