@@ -68,6 +68,7 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 				}
 				currentTry++
 			}
+			vmt.LogBar.ErrorHint("解析失败")
 			mylog.Errorf("视频下载地址解析失败: %v", decodeErr)
 		}
 	}()
