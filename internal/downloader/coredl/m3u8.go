@@ -42,10 +42,12 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 	dmt.HeaderMap = myhttp.GenDefaultHeaderMapByUrl(dmt.HeaderMap, dmt.Link)
 	tsMetas, err := m3u8.ReadTsUrls(dmt.Link, dmt.HeaderMap)
 	if err != nil {
+		dmt.LogBar.ErrorHint("读取 m3u8 异常")
 		return errors.Wrapf(err, "读取 ts 文件失败，file: %v", dmt.FileName)
 	}
 	total = int64(len(tsMetas))
 	if total == 0 {
+		dmt.LogBar.ErrorHint("空 m3u8")
 		return errors.New("读取到空 m3u8，下载任务终止")
 	}
 	handlerFunc(&Progress{
@@ -59,6 +61,7 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 	// 2 初始化临时文件夹
 	tempDirPath, err := myfile.InitTempTsDir(dmt.FileName, config.G.Downloader.TsDirSuffix)
 	if err != nil {
+		dmt.LogBar.ErrorHint("初始化分片目录失败")
 		return errors.Wrapf(err, "初始化临时 ts 文件夹失败，file: %v", dmt.FileName)
 	}
 	// 3 执行下载
@@ -96,10 +99,12 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 		handleTsMetasSimple(tsMetas, downloadTsMeta)
 	}
 	if err != nil {
+		dmt.LogBar.ErrorHint("m3u8 下载失败")
 		return errors.Wrap(err, "m3u8 下载失败")
 	}
 	// 4 合并文件
-	if err = m3u8.Merge(tempDirPath); err != nil {
+	if err = m3u8.Merge(tempDirPath, dmt.LogBar); err != nil {
+		dmt.LogBar.ErrorHint("合并分片失败")
 		return errors.Wrap(err, "合并 ts 文件失败")
 	}
 	return nil

@@ -4,10 +4,10 @@ package catcatch
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mylog/color"
 
 	"github.com/pkg/errors"
 )
@@ -30,28 +30,27 @@ func NewResultSelector(results []*CatCatchResult) *ResultSelector {
 
 // Select 阻塞系统日志, 并让用户在控制台中输入要下载哪个资源
 func (rs *ResultSelector) Select() (string, error) {
-	mylog.PrintAllLogs()
-	mylog.Block()
-	defer mylog.UnBlock()
+	mylog.BlockPanel()
+	defer mylog.UnBlockPanel()
 	scanner := bufio.NewScanner(os.Stdin)
 
 	// 输出解析到的资源
 	PrintResult(rs.results, func(line string) {
-		log.Println(mylog.PackMsg("", mylog.ANSISuccess, line))
+		fmt.Println(color.ToGreen(line))
 	})
 
 	// 用户输入
 	for {
-		log.Println(mylog.PackMsg("", mylog.ANSIWarning, fmt.Sprintf("！！输入要下载资源的 RequestId 执行下载, 输入 %s 放弃解析", StopInput)))
-		log.Println(mylog.PackMsg("", mylog.ANSIWarning, "请输入: "))
+		fmt.Println(color.ToYellow(fmt.Sprintf("！！输入要下载资源的 RequestId 执行下载, 输入 %s 放弃解析", StopInput)))
+		fmt.Println(color.ToYellow("请输入: "))
 
 		if !scanner.Scan() {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, "读取输入失败, 请重新输入"))
+			fmt.Println(color.ToRed("读取输入失败, 请重新输入"))
 			continue
 		}
 		ip := strings.TrimSpace(scanner.Text())
 		if ip == "" {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, "读取输入失败, 请重新输入"))
+			fmt.Println(color.ToRed("读取输入失败, 请重新输入"))
 			continue
 		}
 
@@ -62,7 +61,7 @@ func (rs *ResultSelector) Select() (string, error) {
 		// 根据 RequestId 获取资源
 		url, err := rs.GetUrlByRequestId(ip)
 		if err != nil {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, fmt.Sprintf("%v, 请重新输入", err)))
+			fmt.Println(color.ToRed(fmt.Sprintf("%v, 请重新输入", err)))
 			continue
 		}
 

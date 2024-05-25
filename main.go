@@ -13,11 +13,13 @@ import (
 	"video-downloader-go/internal/downloader"
 	"video-downloader-go/internal/meta"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mylog/color"
+	"video-downloader-go/internal/util/mylog/dlbar"
 
 	"github.com/pkg/errors"
 )
 
-const CurrentVersion = "1.3.2"
+const CurrentVersion = "1.4.0"
 
 func main() {
 	defer appctx.WaitGroup().Wait()
@@ -27,26 +29,30 @@ func main() {
 	fmt.Println("Current Version: ", CurrentVersion)
 
 	// 读取配置
+	fmt.Println(color.ToBlue("正在读取配置..."))
 	err := config.Load("")
 	if err != nil {
-		mylog.Error(err.Error())
+		fmt.Println(color.ToRed(err.Error()))
 		return
 	}
+	fmt.Println(color.ToGreen("读取完成"))
 
 	// 读取要处理的视频数据
+	fmt.Println(color.ToBlue("正在读取待处理任务..."))
 	decodeList, err := readVideoData()
 	if err != nil {
-		mylog.Error(err.Error())
+		fmt.Println(color.ToRed(err.Error()))
 		return
 	}
+	fmt.Println(color.ToGreen("读取完成"))
 	if decodeList.Empty() {
-		mylog.Info("解析列表为空，程序停止")
+		fmt.Println(color.ToBlue("解析列表为空，程序停止"))
 		return
 	}
 	downloadList := new(meta.TaskDeque[meta.Download])
+	fmt.Println(color.ToGreen("程序初始化完成, 开始处理任务..."))
 
-	// 输出初始化日志
-	mylog.PrintAllLogs()
+	mylog.Start()
 
 	// 开启解析任务
 	decoder.ListenAndDecode(decodeList, func(d *meta.Download) {
@@ -64,7 +70,8 @@ func main() {
 	}, func(dmt *meta.Download) {
 		// 下载器判断出无法正常下载的视频，重新加入到解析列表中
 		fileName, originUrl := dmt.FileName, dmt.OriginUrl
-		decodeList.OfferLast(&meta.Video{Name: fileName, Url: originUrl})
+		dmt.LogBar.WaitingDecodeHint("正在等待解析")
+		decodeList.OfferLast(&meta.Video{Name: fileName, Url: originUrl, LogBar: dmt.LogBar})
 	})
 	downloadWg.Wait()
 	mylog.Success("所有任务处理完成")
@@ -105,7 +112,14 @@ func readVideoData() (*meta.TaskDeque[meta.Video], error) {
 		if len(arr) != 2 {
 			return nil, errors.New("文件格式不合法，请遵循：`文件名|地址`")
 		}
-		list.OfferLast(&meta.Video{Name: arr[0], Url: arr[1]})
+		bar := dlbar.NewBar(
+			dlbar.WithStatus(dlbar.BarStatusExecuting),
+			dlbar.WithChildStatus(dlbar.BarChildStatusWaitingDecode),
+			dlbar.WithHint("正在等待解析"),
+			dlbar.WithName(arr[0]),
+		)
+		list.OfferLast(&meta.Video{LogBar: bar, Name: arr[0], Url: arr[1]})
+		mylog.GlobalPanel.RegisterBar(bar)
 	}
 
 	if err = scanner.Err(); err != nil {

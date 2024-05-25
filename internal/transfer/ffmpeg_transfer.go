@@ -14,6 +14,7 @@ import (
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util/myfile"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mylog/dlbar"
 	"video-downloader-go/internal/util/mymath"
 
 	"github.com/pkg/errors"
@@ -21,7 +22,7 @@ import (
 
 type ffmpegTransfer struct{}
 
-func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string) error {
+func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string, bar *dlbar.Bar) error {
 	fi, err := os.Stat(tsDir)
 	if err != nil || !fi.IsDir() {
 		return errors.New("无效的 ts 目录")
@@ -59,7 +60,7 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string) error {
 	if err != nil {
 		return errors.Wrap(err, "排序文件失败")
 	}
-	err = ft.concatFiles(tsDir, tsFilePaths, outputPath)
+	err = ft.concatFiles(tsDir, tsFilePaths, outputPath, bar)
 	if err != nil {
 		return errors.Wrap(err, "合并 ts 文件时出现错误")
 	}
@@ -67,7 +68,7 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string) error {
 }
 
 // 核心的合并 ts 文件逻辑
-func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, outputPath string) error {
+func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
 	tempTsFilePath := fmt.Sprintf("%s/ts_%d.ts", tsDir, math.MaxInt32)
 	tempDestFilePath := strings.Replace(outputPath, ".mp4", ".ts", -1)
 	if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
@@ -113,6 +114,8 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 				return errors.Wrap(err, "临时文件拷贝异常："+tempDestFilePath)
 			}
 		}
+		percent := int(math.Round(float64(current) / float64(size) * 100))
+		bar.TransferHint(fmt.Sprintf("正在合并分片(%d%%)", percent))
 	}
 	// 全部转换完成后，生成最终文件
 	if !myfile.FileExist(tempTsFilePath) {
@@ -130,10 +133,9 @@ func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, output
 
 // 执行命令行命令
 func (ft *ffmpegTransfer) executeCmd(cmd *exec.Cmd) error {
-	out, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, "执行命令时出错")
 	}
-	mylog.Info(string(out))
 	return nil
 }

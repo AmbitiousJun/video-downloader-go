@@ -1,5 +1,5 @@
 // 自定义的令牌桶
-package util
+package mytokenbucket
 
 import (
 	"fmt"
@@ -7,6 +7,9 @@ import (
 	"time"
 	"video-downloader-go/internal/util/mymath"
 )
+
+// GlobalBucket 全局的令牌桶, config 包初始化完成后, 会为其赋值
+var GlobalBucket *MyTokenBucket
 
 type MyTokenBucket struct {
 	capacity          int64        // 桶容量

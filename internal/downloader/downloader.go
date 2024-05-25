@@ -5,8 +5,10 @@ package downloader
 import (
 	"fmt"
 	"log"
+	"math"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/downloader/coredl"
@@ -53,24 +55,45 @@ func ListenAndDownload(list *meta.TaskDeque[meta.Download], completeOne Complete
 func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlErrorHandler, offerBack func(*meta.Download)) {
 
 	dlpool.SubmitTask(func() {
-		dlLog := mylog.NewDownloadLog()
-		defer dlLog.Invalidate()
 
 		originFilename := dmt.FileName
 		link := dmt.Link
 		fileName := fmt.Sprintf("%s%s%s.mp4", config.G.Downloader.DownloadDir, string(filepath.Separator), originFilename)
 		dmt.FileName = fileName
 		mylog.Infof("监听到下载任务，文件名：%v，下载地址：%v", fileName, link)
+		dmt.LogBar.UpdatePercentAndSize(0, 0)
 
 		// 初始化下载器并下载
 		cdl := initCoreDownloader(dmt)
+		progressMap := make(map[int]*coredl.Progress)
+		progressMu := sync.Mutex{}
 		err := cdl.Exec(dmt, func(p *coredl.Progress) {
-			printDownloadProgress(dlLog, dmt.FileName, p)
+			progressMu.Lock()
+			defer progressMu.Unlock()
+			progressMap[p.CurrentTask] = p
+			percent, size := 0, int64(0)
+			current, total := float64(0), float64(0)
+			for _, progress := range progressMap {
+				// 1 size 累加
+				size += progress.CurrentBytes
+				// 2 字节数不一致
+				if progress.CurrentBytes != progress.TotalBytes {
+					current += float64(progress.CurrentBytes)
+					total += float64(progress.TotalBytes)
+					continue
+				}
+				// 3 字节数一致, 按照分片数统计
+				current += float64(progress.Current)
+				total += float64(progress.Total)
+			}
+			percent = int(math.Round((current / total) * float64(100)))
+			dmt.LogBar.UpdatePercentAndSize(percent, size)
 		})
 
 		// 下载成功
 		if err == nil {
 			completeOne()
+			dmt.LogBar.OkHint("下载完成")
 			return
 		}
 
@@ -82,6 +105,7 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 		// 下载失败，无效的 m3u8
 		if strings.Contains(err.Error(), UnValidM3U8) {
 			mylog.Warnf("下载失败：%v, 重新添加到解析任务中，视频名称：%v", err, dmt.FileName)
+			dmt.LogBar.ErrorHint("下载失败, 等待重新解析")
 			// 触发下载异常
 			dlErrorHandler(dmt)
 			return
@@ -89,6 +113,7 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 
 		// 其他下载异常
 		mylog.Errorf("下载失败：%v，重新加入下载列表", err)
+		dmt.LogBar.ErrorHint("下载失败, 等待重新下载")
 		offerBack(dmt)
 	})
 }

@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util"
+	"video-downloader-go/internal/util/mytokenbucket"
 
 	"github.com/pkg/errors"
 )
@@ -86,7 +86,7 @@ func DownloadWithRateLimit(request *http.Request, destPath string) (int64, error
 	RemoveRangeHeader(headers)
 	start, end := ranges[0], ranges[1]
 	// 2 分割文件进行下载，每次下载前先到令牌桶中获取能够下载的字节数
-	bucket := config.RateLimitBucket()
+	bucket := mytokenbucket.GlobalBucket
 	client := TimeoutHttpClient()
 	dest, err := os.OpenFile(destPath, os.O_RDWR|os.O_CREATE, 0777)
 	if err != nil {

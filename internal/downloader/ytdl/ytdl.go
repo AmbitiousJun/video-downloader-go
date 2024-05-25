@@ -51,6 +51,7 @@ func (d *YtDlDownloader) Exec(dmt *meta.Download, handlerFunc coredl.ProgressHan
 	for i, link := range links {
 		mylog.Infof("正在处理第 %d / %d 个子任务，文件名：%s", i+1, size, dmt.FileName)
 		tmpDmt := meta.NewDownloadMeta(link, strings.Replace(dmt.FileName, ".mp4", getFilePartSuffix(i), -1), dmt.OriginUrl)
+		tmpDmt.LogBar = dmt.LogBar
 
 		var err error
 		if m3u8.CheckM3U8(link, dmt.HeaderMap) {

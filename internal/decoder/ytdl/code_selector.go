@@ -7,7 +7,6 @@ package ytdl
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -16,7 +15,7 @@ import (
 	"sync"
 	"time"
 	"video-downloader-go/internal/config"
-	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mylog/color"
 	"video-downloader-go/internal/util/mystring"
 
 	"github.com/pkg/errors"
@@ -71,41 +70,38 @@ func (flm *userChoiceMap) Load(key string) []*userChoice {
 // 并接收用户从控制台中输入的 format code
 // 最后封装成 YtDlFormatCode 类型的对象返回
 func (cs *CodeSelector) RequestCode() (*config.YtDlFormatCode, error) {
-	// 在读取的时候，停止日志包输出
-	mylog.Block()
-	defer mylog.UnBlock()
 	scanner := bufio.NewScanner(os.Stdin)
 
 out:
 	for {
 		// 执行命令，获取所有可选的 format code
-		log.Println(mylog.PackMsg("", mylog.ANSIWarning, "正在尝试读取 format code..."))
+		fmt.Println(color.ToYellow("正在尝试读取 format code..."))
 		if err := cs.ExecuteProcess(); err != nil {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, fmt.Sprintf("执行命令失败: %v", err)))
+			fmt.Println(color.ToRed(fmt.Sprintf("执行命令失败: %v", err)))
 			return nil, err
 		}
 
 		// 用户选择
 		for {
-			log.Println(mylog.PackMsg("", mylog.ANSIWarning, "！！format code 输入规范：[code] 或者 [code1+code2]（不包含[]）"))
-			log.Println(mylog.PackMsg("", mylog.ANSIWarning, fmt.Sprintf("！！输入自定义的 format code 进行解析，输入空行可重新读取 code，输入 %s 放弃解析", StopInput)))
-			log.Println(mylog.PackMsg("", mylog.ANSIWarning, "请选择要解析的 format code："))
+			fmt.Println(color.ToYellow("！！format code 输入规范：[code] 或者 [code1+code2]（不包含[]）"))
+			fmt.Println(color.ToYellow(fmt.Sprintf("！！输入自定义的 format code 进行解析，输入空行可重新读取 code，输入 %s 放弃解析", StopInput)))
+			fmt.Println(color.ToYellow("请选择要解析的 format code："))
 
 			// 用户配置了记住视频格式 并且成功匹配上之前记录的视频格式
 			if code, ok := cs.UseRememberFormat(); ok {
-				log.Println()
-				log.Println(mylog.PackMsg("", mylog.ANSISuccess, fmt.Sprintf("通过上一次的选择格式成功匹配到 code: %v, 3 秒后进行解析...", code.Code)))
+				fmt.Println()
+				fmt.Println(color.ToYellow(fmt.Sprintf("通过上一次的选择格式成功匹配到 code: %v, 3 秒后进行解析...", code.Code)))
 				time.Sleep(time.Second * 3)
 				return code, nil
 			}
 
 			if !scanner.Scan() {
-				log.Println(mylog.PackMsg("", mylog.ANSIWarning, "读取输入失败，重新读取 format code..."))
+				fmt.Println(color.ToYellow("读取输入失败，重新读取 format code..."))
 				continue out
 			}
 			ip := strings.TrimSpace(scanner.Text())
 			if ip == "" {
-				log.Println(mylog.PackMsg("", mylog.ANSIWarning, "重新读取 format code..."))
+				fmt.Println(color.ToYellow("重新读取 format code..."))
 				continue out
 			}
 
@@ -124,7 +120,7 @@ out:
 			}
 
 			if !success {
-				log.Println(mylog.PackMsg("", mylog.ANSIWarning, "输入不合法，请重新输入"))
+				fmt.Println(color.ToYellow("输入不合法，请重新输入"))
 				continue
 			}
 
@@ -254,8 +250,8 @@ func (cs *CodeSelector) ExecuteProcess() error {
 
 // PrintFormatCodes 分析 youtube-dl 的解析结果，并输出到控制台中
 func (cs *CodeSelector) PrintFormatCodes(raw string) {
-	log.Println(mylog.PackMsg("", mylog.ANSIWarning, "===== 请手动选择 format code"))
-	log.Println(mylog.PackMsg("", mylog.ANSIWarning, "===== 解析地址："+cs.Url))
+	fmt.Println(color.ToYellow("===== 请手动选择 format code"))
+	fmt.Println(color.ToYellow("===== 解析地址：" + cs.Url))
 
 	flag := false
 	warnPrefix, errPrefix := "WARNING", "ERROR"
@@ -265,14 +261,14 @@ func (cs *CodeSelector) PrintFormatCodes(raw string) {
 	for scanner.Scan() {
 		res := scanner.Text()
 		if strings.HasPrefix(res, warnPrefix) || strings.HasPrefix(res, errPrefix) {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, res))
+			fmt.Println(color.ToRed(res))
 		}
 		if !flag && regex.MatchString(res) {
 			flag = true
 			continue
 		}
 		if flag {
-			log.Println(mylog.PackMsg("", mylog.ANSISuccess, res))
+			fmt.Println(color.ToGreen(res))
 			// 把解析结果原始行保存起来
 			if tfl, ok := cs.TransferFormatLine(res); ok {
 				validFormatLines = append(validFormatLines, tfl)
@@ -282,7 +278,7 @@ func (cs *CodeSelector) PrintFormatCodes(raw string) {
 
 	cs.formatLines = validFormatLines
 
-	log.Println(mylog.PackMsg("", mylog.ANSIWarning, "===== 解析地址："+cs.Url))
+	fmt.Println(color.ToYellow("===== 解析地址：" + cs.Url))
 }
 
 // TransferFormatLine 负责去掉 format line 中的文件大小信息以及多余的空格

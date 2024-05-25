@@ -6,8 +6,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"video-downloader-go/internal/util"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mytokenbucket"
 
 	"github.com/pkg/errors"
 )
@@ -32,14 +32,6 @@ const (
 	RateLimitMaxValueMBPS         = RateLimitMaxValueKBPS / 1024      // mbps 最大下载速率
 	RateLimitMinValueMBPS float64 = 0.1                               // mbps 最小下载速率
 )
-
-// 全局唯一的下载速率限制令牌桶对象
-var tokenBucket *util.MyTokenBucket
-
-// 获取令牌桶对象
-func RateLimitBucket() *util.MyTokenBucket {
-	return tokenBucket
-}
 
 // 检查下载器配置是否正确
 func checkDownloaderConfig() error {
@@ -92,10 +84,11 @@ func checkDownloaderConfig() error {
 		}
 	}
 	// 初始化令牌桶
-	tokenBucket, err = util.NewTokenBucket(int64(rate))
+	tokenBucket, err := mytokenbucket.NewTokenBucket(int64(rate))
 	if err != nil {
 		return errors.Wrap(err, "初始化速率限制令牌桶时出现异常")
 	}
+	mytokenbucket.GlobalBucket = tokenBucket
 	return nil
 }
 

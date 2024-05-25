@@ -52,10 +52,12 @@ func downloadMp4(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bo
 			time.Sleep(time.Second * 2)
 			return downloadMp4(dmt, handlerFunc, multiThread)
 		}
+		dmt.LogBar.ErrorHint("无法获取文件总大小")
 		return errors.Wrap(err, "无法获取文件总大小")
 	}
 	totalBytes = ranges[1]
 	if totalBytes <= 0 {
+		dmt.LogBar.ErrorHint("空文件, 无法下载")
 		return errors.New("空文件，停止下载")
 	}
 	// 2 分片

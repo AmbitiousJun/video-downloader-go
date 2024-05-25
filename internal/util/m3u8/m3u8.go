@@ -13,6 +13,7 @@ import (
 	"video-downloader-go/internal/util"
 	"video-downloader-go/internal/util/myhttp"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mylog/dlbar"
 
 	"github.com/pkg/errors"
 )
@@ -202,11 +203,11 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 
 // 合并 ts 文件列表
 // @param tsDirPath 临时目录
-func Merge(tsDirPath string) error {
+func Merge(tsDirPath string, bar *dlbar.Bar) error {
 	dirName := filepath.Base(tsDirPath)
 	fileName := dirName[:len(dirName)-len(config.G.Downloader.TsDirSuffix)-1]
 	mylog.Infof("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName)
-	err := transfer.Instance().Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName)
+	err := transfer.Instance().Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName, bar)
 	if err != nil {
 		return errors.Wrap(err, "合并失败")
 	}

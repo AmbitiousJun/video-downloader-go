@@ -1,10 +1,11 @@
 package ytdl
 
 import (
-	"log"
+	"fmt"
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util/mylog"
+	"video-downloader-go/internal/util/mylog/color"
 
 	"github.com/pkg/errors"
 )
@@ -26,11 +27,12 @@ func (d *Decoder) FetchDownloadLinks(url string) ([]string, error) {
 	}
 
 	// 2 尝试用户手动输入的 format
-	mylog.PrintAllLogs()
-	log.Println(mylog.PackMsg("", mylog.ANSIWarning, "预置 code 全部解析失败或没有配置，触发手动选择，url："+url))
+	mylog.BlockPanel()
+	fmt.Println(color.ToYellow("预置 code 全部解析失败或没有配置，触发手动选择，url：" + url))
 
 	// 3 调用 selector 请求 format code
 	code, err := d.tryCode(url)
+	mylog.UnBlockPanel()
 	if err != nil {
 		return nil, err
 	}

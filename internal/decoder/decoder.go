@@ -36,6 +36,7 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 			// 获取链接地址
 			vmt := list.PollFirst()
 			mylog.Infof("识别到解析任务, 标题：%s, 源地址：%s", vmt.Name, vmt.Url)
+			vmt.LogBar.DecodeHint("解析中...")
 
 			// 判断解析类型
 			use := config.G.Decoder.CustomUse(vmt.Url)
@@ -58,6 +59,7 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 				}
 
 				if decodeErr == nil {
+					dmt.LogBar = vmt.LogBar
 					decodeSuccess(dmt)
 					// 通常情况下, 解析任务处理速率远高于下载任务
 					// 所以这里阻塞一段较长的时间, 避免解析过快

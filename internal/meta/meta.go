@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"video-downloader-go/internal/util/myhttp"
+	"video-downloader-go/internal/util/mylog/dlbar"
 
 	"github.com/google/uuid"
 )
@@ -13,12 +14,14 @@ var YtdlLinksSep = uuid.New().String()
 
 // 视频文件元数据
 type Video struct {
-	Name string // 视频名称
-	Url  string // 视频地址
+	LogBar *dlbar.Bar // 日志任务条
+	Name   string     // 视频名称
+	Url    string     // 视频地址
 }
 
 // Download 封装了一个视频下载任务所需要的元数据
 type Download struct {
+	LogBar    *dlbar.Bar        // 日志任务条
 	Link      string            // 视频下载地址
 	FileName  string            // 视频名称
 	OriginUrl string            // 源视频地址
