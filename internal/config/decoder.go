@@ -33,6 +33,7 @@ const (
 
 type Decoder struct {
 	Use       string          `yaml:"use"`        // 使用哪种解析方式，可选值：none, youtube-dl
+	MaxRetry  int             `yaml:"max-retry"`  // 最大的尝试解析次数
 	YoutubeDL YoutubeDlConfig `yaml:"youtube-dl"` // youtube-dl 解析器相关配置
 	CatCatch  CatCatchConfig  `yaml:"cat-catch"`  // cat-catch 解析器
 }
@@ -122,6 +123,11 @@ func (dc *Decoder) checkFields(allowEmpty bool) error {
 	// 6 检查猫抓解析器配置
 	if !dc.CatCatch.IsHeadlessValid() && !allowEmpty {
 		return errors.New("headless 配置错误, 可选择: -1, 1")
+	}
+
+	// 7 检查最大重试次数
+	if dc.MaxRetry < 1 && !allowEmpty {
+		return errors.New("max-retry 配置错误, 必须大于 1")
 	}
 
 	return nil

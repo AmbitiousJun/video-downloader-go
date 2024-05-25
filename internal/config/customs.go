@@ -54,6 +54,17 @@ func (dc *Decoder) CustomUse(dcUrl string) string {
 	return targetDecoder.Use
 }
 
+// CustomMaxRetry 返回解析器最大的重试次数
+// 优先返回定制化配置
+func (dc *Decoder) CustomMaxRetry(dcUrl string) int {
+	targetDecoder := resolveDecoderByUrl(dcUrl, dc)
+	if targetDecoder == nil || targetDecoder.MaxRetry < 1 {
+		return dc.MaxRetry
+	}
+
+	return targetDecoder.MaxRetry
+}
+
 // CustomCookiesFrom 返回一个 youtube-dl 的 cookie 来源
 // 优先返回定制化配置
 func (y *YoutubeDlConfig) CustomCookiesFrom(dcUrl string) string {

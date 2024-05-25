@@ -81,9 +81,8 @@ out:
 		// 执行命令，获取所有可选的 format code
 		log.Println(mylog.PackMsg("", mylog.ANSIWarning, "正在尝试读取 format code..."))
 		if err := cs.ExecuteProcess(); err != nil {
-			log.Println(mylog.PackMsg("", mylog.ANSIDanger, fmt.Sprintf("执行命令失败: %v，两秒后重试", err)))
-			time.Sleep(time.Second * 2)
-			continue
+			log.Println(mylog.PackMsg("", mylog.ANSIDanger, fmt.Sprintf("执行命令失败: %v", err)))
+			return nil, err
 		}
 
 		// 用户选择

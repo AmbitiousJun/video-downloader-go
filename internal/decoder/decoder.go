@@ -1,6 +1,7 @@
 package decoder
 
 import (
+	"errors"
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/meta"
@@ -18,10 +19,14 @@ type D interface {
 // 解析成功的处理函数
 type DecodeSuccessHandler func(*meta.Download)
 
+// 解析完成后将下载数据构建成 DownloadMeta
+type DownloadMetaBuilder func([]string, *meta.Video) *meta.Download
+
 func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSuccessHandler) {
 	mylog.Info("开始监听解析列表")
 	go func() {
-		ticker := NewGrowableTicker(10, 5*60, 0.2)
+		ticker := NewGrowableTicker(10, 3*60, 0.17)
+	out:
 		for {
 			// 没有任务处理时, 每阻塞 2 秒检查一次任务列表
 			for list.Empty() {
@@ -34,46 +39,59 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 
 			// 判断解析类型
 			use := config.G.Decoder.CustomUse(vmt.Url)
+			maxRetry := config.G.Decoder.CustomMaxRetry(vmt.Url)
+			currentTry := 1
 			dcd := GetDecoder(use)
+			var dmt *meta.Download
+			var decodeErr error
 
-			switch use {
-			case config.DecoderNone:
-				// 不需要解析, url 直接就是下载链接
-				decodeSuccess(meta.NewDownloadMeta(vmt.Url, vmt.Name, vmt.Url))
-			case config.DecoderYoutubeDl:
-				dmt, err := useYoutubeDlDecode(dcd, vmt)
-				if err != nil {
-					mylog.Errorf("视频下载地址解析失败：%v, 重新加入任务列表", err)
-					list.OfferLast(vmt)
-					continue
+			for currentTry <= maxRetry {
+				switch use {
+				case config.DecoderNone:
+					dmt, decodeErr = meta.NewDownloadMeta(vmt.Url, vmt.Name, vmt.Url), nil
+				case config.DecoderYoutubeDl:
+					dmt, decodeErr = useYoutubeDlDecode(dcd, vmt)
+				case config.DecoderCatCatchTx:
+					dmt, decodeErr = useCatCatchTxDecode(dcd, vmt)
+				default:
+					decodeErr = errors.New("不支持的解析器类型")
 				}
-				decodeSuccess(dmt)
-			case config.DecoderCatCatchTx:
-				dlUrls, err := dcd.FetchDownloadLinks(vmt.Url)
-				if err != nil {
-					mylog.Errorf("视频下载地址解析失败: %v, 重新加入任务列表", err)
-					list.OfferLast(vmt)
-					continue
+
+				if decodeErr == nil {
+					decodeSuccess(dmt)
+					// 通常情况下, 解析任务处理速率远高于下载任务
+					// 所以这里阻塞一段较长的时间, 避免解析过快
+					time.Sleep(time.Second * ticker.Next())
+					continue out
 				}
-				decodeSuccess(meta.NewDownloadMeta(dlUrls[0], vmt.Name, vmt.Url))
-			default:
-				mylog.Error("不支持的解析器类型")
+				currentTry++
 			}
-
-			// 通常情况下, 解析任务处理速率远高于下载任务
-			// 所以这里阻塞一段较长的时间, 避免解析过快
-			time.Sleep(time.Second * ticker.Next())
+			mylog.Errorf("视频下载地址解析失败: %v", decodeErr)
 		}
 	}()
 }
 
+// useCatCatchTxDecode 调用 cat-catch:tx 解析器来解析下载地址
+func useCatCatchTxDecode(dcd D, vmt *meta.Video) (*meta.Download, error) {
+	return decode2Dmt(dcd, vmt, func(s []string, v *meta.Video) *meta.Download {
+		return meta.NewDownloadMeta(s[0], v.Name, v.Url)
+	})
+}
+
 // useYoutubeDlDecode 调用 youtube-dl 解析器来解析下载地址
 func useYoutubeDlDecode(dcd D, vmt *meta.Video) (*meta.Download, error) {
+	return decode2Dmt(dcd, vmt, func(s []string, v *meta.Video) *meta.Download {
+		return meta.NewYtDlDownloadMeta(s, v.Name, v.Url)
+	})
+}
+
+// decode2Dmt 通用的解析逻辑, 解析完成后, 使用 dmtBuilder 构建成 DownloadMeta 返回
+func decode2Dmt(dcd D, vmt *meta.Video, dmtBuilder DownloadMetaBuilder) (*meta.Download, error) {
 	mylog.Infof("开始解析视频, 文件名：%s, 源地址：%s", vmt.Name, vmt.Url)
 	links, err := dcd.FetchDownloadLinks(vmt.Url)
 	if err != nil {
 		return nil, err
 	}
 	mylog.Successf("解析成功, 已添加到下载列表, 文件名：%s, 下载地址：%s", vmt.Name, links)
-	return meta.NewYtDlDownloadMeta(links, vmt.Name, vmt.Url), nil
+	return dmtBuilder(links, vmt), nil
 }

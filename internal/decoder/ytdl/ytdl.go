@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	// 一个 format code 最多可以重试 5 次
-	RetryTime = 5
+	// 一个 format code 最多可以重试 3 次
+	RetryTime = 3
 )
 
 // Decoder 是一个使用 youtube-dl 工具来进行解析的解析器
@@ -20,7 +20,6 @@ type Decoder struct{}
 // FetchDownloadLinks 是核心解析方法，实现接口 D
 func (d *Decoder) FetchDownloadLinks(url string) ([]string, error) {
 	codes := config.G.Decoder.YoutubeDL.CustomFormatCodes(url)
-
 	// 1 尝试配置文件中配置的 format
 	if links, err := d.tryLinks(url, codes); err == nil {
 		return links, nil
@@ -30,17 +29,33 @@ func (d *Decoder) FetchDownloadLinks(url string) ([]string, error) {
 	mylog.PrintAllLogs()
 	log.Println(mylog.PackMsg("", mylog.ANSIWarning, "预置 code 全部解析失败或没有配置，触发手动选择，url："+url))
 
-	// 调用 selector 请求 format code
-	code, err := NewCodeSelector(url).RequestCode()
+	// 3 调用 selector 请求 format code
+	code, err := d.tryCode(url)
 	if err != nil {
-		return nil, errors.Wrap(err, "请求 format code 失败")
+		return nil, err
 	}
 
+	// 4 使用获取到的 format code 请求视频下载地址
 	links, err := d.tryLinks(url, []*config.YtDlFormatCode{code})
 	if err != nil {
-		return nil, errors.Wrap(err, "解析失败")
+		return nil, err
 	}
 	return links, nil
+}
+
+// tryCode 调用 youtube-dl 获取 format code, 并允许重试 RetryTime 次
+func (d *Decoder) tryCode(url string) (*config.YtDlFormatCode, error) {
+	currentTry := 1
+	cs := NewCodeSelector(url)
+	for currentTry <= RetryTime {
+		code, err := cs.RequestCode()
+		if err == nil {
+			return code, nil
+		}
+		currentTry++
+		time.Sleep(time.Second)
+	}
+	return nil, errors.New("获取 format code 失败")
 }
 
 // tryLinks 负责解析下载链接，并允许重试 RetryTime 次
