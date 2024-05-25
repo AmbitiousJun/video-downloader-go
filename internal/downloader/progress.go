@@ -53,8 +53,9 @@ func printDownloadProgress(dlLog *mylog.DownloadLog, fileName string, p *coredl.
 
 	// 控制文件名的长度不超过 1 行
 	maxLen := int(float64(width) * 0.6)
-	if len(fileName) > maxLen {
-		fileName = fileName[:maxLen] + "..."
+	fnRunes := []rune(fileName)
+	if len(fnRunes) > maxLen {
+		fileName = string(fnRunes[:maxLen]) + "..."
 	}
 
 	dlLog.Progressf("文件名：%v", fileName)
