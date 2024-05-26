@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const CurrentVersion = "1.4.0"
+const CurrentVersion = "1.4.1"
 
 func main() {
 	defer appctx.WaitGroup().Wait()
@@ -70,7 +70,7 @@ func main() {
 	}, func(dmt *meta.Download) {
 		// 下载器判断出无法正常下载的视频，重新加入到解析列表中
 		fileName, originUrl := dmt.FileName, dmt.OriginUrl
-		dmt.LogBar.WaitingDecodeHint("正在等待解析")
+		dmt.LogBar.WaitingHint("正在等待解析")
 		decodeList.OfferLast(&meta.Video{Name: fileName, Url: originUrl, LogBar: dmt.LogBar})
 	})
 	downloadWg.Wait()
@@ -113,8 +113,7 @@ func readVideoData() (*meta.TaskDeque[meta.Video], error) {
 			return nil, errors.New("文件格式不合法，请遵循：`文件名|地址`")
 		}
 		bar := dlbar.NewBar(
-			dlbar.WithStatus(dlbar.BarStatusExecuting),
-			dlbar.WithChildStatus(dlbar.BarChildStatusWaitingDecode),
+			dlbar.WithStatus(dlbar.BarStatusWaiting),
 			dlbar.WithHint("正在等待解析"),
 			dlbar.WithName(arr[0]),
 		)

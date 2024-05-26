@@ -11,7 +11,7 @@ mkdir -p dist
 platforms=("darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64" "windows/amd64" "windows/arm64")
 
 # 版本号
-version=1.4.0
+version=1.4.1
 
 # 循环编译并重命名可执行文件
 for platform in "${platforms[@]}"

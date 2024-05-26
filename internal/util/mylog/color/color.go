@@ -7,6 +7,7 @@ const (
 	Yellow = "\x1b[38;2;220;165;80m"
 	Red    = "\x1b[38;2;228;116;112m"
 	Purple = "\x1b[38;2;160;186;250m"
+	Gray   = "\x1b[38;2;145;147;152m"
 
 	reset = "\x1b[0m"
 )
@@ -34,4 +35,9 @@ func ToRed(str string) string {
 // ToPurple 将字符串转成紫色
 func ToPurple(str string) string {
 	return Purple + str + reset
+}
+
+// ToGray 将字符串转成灰色
+func ToGray(str string) string {
+	return Gray + str + reset
 }

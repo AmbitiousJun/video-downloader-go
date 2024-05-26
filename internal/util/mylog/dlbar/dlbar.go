@@ -11,15 +11,15 @@ import (
 const (
 	BarStatusError     = iota // 失败
 	BarStatusOk               // 成功
+	BarStatusWaiting          // 正在等待
 	BarStatusExecuting        // 正在执行
 )
 
 // 任务执行子状态
 const (
-	BarChildStatusWaitingDecode = iota // 等待解析
-	BarChildStatusDecode               // 正在解析
-	BarChildStatusDownload             // 正在下载
-	BarChildStatusTransfer             // 正在转换
+	BarChildStatusDecode   = iota // 正在解析
+	BarChildStatusDownload        // 正在下载
+	BarChildStatusTransfer        // 正在转换
 )
 
 // BarOption 是 Bar 结构的初始化函数
@@ -106,13 +106,12 @@ func (b *Bar) OkHint(hint string) {
 	b.Status = BarStatusOk
 }
 
-// WaitingDecodeHint 更新提示信息, 并标记为正在等待解析
-func (b *Bar) WaitingDecodeHint(hint string) {
+// WaitingHint 更新提示信息, 并标记为正在等待解析
+func (b *Bar) WaitingHint(hint string) {
 	b.Mu.Lock()
 	defer b.Mu.Unlock()
 	b.Hint = hint
-	b.Status = BarStatusExecuting
-	b.ChildStatus = BarChildStatusWaitingDecode
+	b.Status = BarStatusWaiting
 }
 
 // DecodeHint 更新提示信息, 并标记为正在解析

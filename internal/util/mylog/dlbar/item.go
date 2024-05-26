@@ -17,7 +17,7 @@ const (
 	HintItemDownloadBarEnd        = "]"  // 进度条结尾字符
 	HintItemDownloadBarUnfinished = "-"  // 进度条未完成字符
 	HintItemDownloadBarFinished   = "*"  // 进度条已完成字符
-	HintItemDownloadBarSize       = 12   // 进度条长度
+	HintItemDownloadBarSize       = 22   // 进度条长度
 	HintItemSizeB                 = "B"  // 文件大小: B
 	HintItemSizeKb                = "KB" // 文件大小: KB
 	HintItemSizeMb                = "MB" // 文件大小: MB
@@ -36,12 +36,15 @@ func (hi *HintItem) String(bar *Bar) string {
 		return ""
 	}
 
-	// 1 成功和失败状态, 返回对应的提示信息
+	// 1 非正在执行状态, 返回对应的提示信息
 	if bar.Status == BarStatusOk {
 		return color.ToGreen(bar.Hint)
 	}
 	if bar.Status == BarStatusError {
 		return color.ToRed(bar.Hint)
+	}
+	if bar.Status == BarStatusWaiting {
+		return color.ToGray(bar.Hint)
 	}
 
 	// 2 正在执行状态, 如果不是 正在下载 子状态, 也是直接返回对应的提示信息
@@ -88,6 +91,7 @@ var (
 	StatusItemExecutingFlags = []string{`\`, `|`, `/`, `-`} // 正在执行的状态标志数组
 	StatusItemOk             = "\u2714"                     // 对勾
 	StatusItemError          = "\u2718"                     // 错误叉叉
+	StatusItemWaiting        = "-"                          // 正在等待
 )
 
 // StatusItem 用于在日志末尾显示当前的执行状态
@@ -105,12 +109,15 @@ func (si *StatusItem) String(bar *Bar) string {
 		return ""
 	}
 
-	// 1 成功和失败状态, 直接处理
+	// 1 非正在执行状态, 直接处理
 	if bar.Status == BarStatusOk {
 		return color.ToGreen(StatusItemOk)
 	}
 	if bar.Status == BarStatusError {
 		return color.ToRed(StatusItemError)
+	}
+	if bar.Status == BarStatusWaiting {
+		return color.ToGray(StatusItemWaiting)
 	}
 
 	// 2 其余状态都认为是正在执行, 循环遍历正在执行的标志进行返回
