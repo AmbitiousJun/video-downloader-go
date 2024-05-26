@@ -59,6 +59,7 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 				}
 
 				if decodeErr == nil {
+					vmt.LogBar.WaitingHint("解析完成, 等待下载")
 					dmt.LogBar = vmt.LogBar
 					decodeSuccess(dmt)
 					// 通常情况下, 解析任务处理速率远高于下载任务
