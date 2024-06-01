@@ -91,7 +91,7 @@ func (hi *HintItem) DownloadBar(percent int) string {
 
 var (
 	StatusItemExecutingFlags = []string{`\`, `|`, `/`, `-`} // 正在执行的状态标志数组
-	StatusItemOk             = "√"                          // 对勾
+	StatusItemOk             = "✓"                          // 对勾
 	StatusItemError          = "x"                          // 错误叉叉
 	StatusItemWaiting        = "-"                          // 正在等待
 )
