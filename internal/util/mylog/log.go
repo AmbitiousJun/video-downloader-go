@@ -11,8 +11,10 @@ import (
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/util/mylog/color"
 	"video-downloader-go/internal/util/mylog/dlbar"
+	"video-downloader-go/internal/util/mystring"
 	"video-downloader-go/internal/util/mytokenbucket"
 
+	"github.com/mattn/go-runewidth"
 	"golang.org/x/term"
 )
 
@@ -117,19 +119,20 @@ func (p *Panel) PrintLogPanel() {
 	GlobalPanel.Mu.Lock()
 	defer GlobalPanel.Mu.Unlock()
 	width, _ := GetTerminalSize()
-	if width <= 11 {
+	tipsLen := 11
+	if width <= tipsLen {
 		width = 1
 	} else {
-		width -= 11
+		width -= tipsLen
 	}
 
 	// 1 将当次面板日志全部收集到数组中
 	allLogs := []string{}
 	allLogs = append(allLogs, color.ToPurple("Download ↓ "+strings.Repeat("=", width)))
 	GlobalPanel.SortBarsByStatus()
-	for i, b := range GlobalPanel.DlBars {
-		allLogs = append(allLogs, fmt.Sprintf("%d. %s", i+1, b.String()))
-	}
+	CollectBarLogs(GlobalPanel.DlBars, func(s string) {
+		allLogs = append(allLogs, s)
+	})
 	allLogs = append(allLogs, color.ToYellow("Speed: "+GlobalPanel.DlSpeed()))
 	allLogs = append(allLogs, color.ToPurple("Download ↑ "+strings.Repeat("=", width)))
 	allLogs = append(allLogs, color.ToPurple("Log      ↓ "+strings.Repeat("=", width)))
@@ -204,6 +207,36 @@ func (p *Panel) GetBar(barId string) (*dlbar.Bar, error) {
 	return res, nil
 }
 
+// CollectBarLogs 将多个 bar 批量处理为字符串 log 并以回调形式返回
+func CollectBarLogs(bars []*dlbar.Bar, callback func(s string)) {
+	allGroups := make([][]string, len(bars))
+	maxLen := make(map[int]int)
+	// 统计每一个项目的最长长度
+	for i, bar := range bars {
+		g := bar.Group()
+		// 在最前面拼接上 bar 序号
+		g = append([]string{fmt.Sprintf("%d.", i+1)}, g...)
+		allGroups[i] = g
+		for j, s := range g {
+			sLen := runewidth.StringWidth(s)
+			if sLen > maxLen[j] {
+				maxLen[j] = sLen
+			}
+		}
+	}
+	// 遍历所有分组, 按照最长长度进行格式化返回
+	for _, group := range allGroups {
+		sb := strings.Builder{}
+		for i, s := range group {
+			sb.WriteString(mystring.PadRightByRuneWidth(s, maxLen[i], ' '))
+			if i < len(group)-1 {
+				sb.WriteString(" ")
+			}
+		}
+		callback(sb.String())
+	}
+}
+
 // GetTerminalSize 返回用户运行的终端大小
 func GetTerminalSize() (int, int) {
 	width, height, err := term.GetSize(int(os.Stdout.Fd()))
@@ -268,16 +301,17 @@ func Success(l string) {
 // cutLog 判断一条日志的长度如果超出一行, 就进行截断
 func cutLog(l string) string {
 	width, _ := GetTerminalSize()
+	lWidth := runewidth.StringWidth(l)
 	percent := 0.7
 
 	// 1 l 长度合法, 无需额外的判断
-	if float64(len(l)) <= float64(width)*percent {
+	if float64(lWidth) <= float64(width)*percent {
 		return l
 	}
 
 	// 2 对字符串进行截断
 	lRunes := []rune(l)
-	runeWidth := float64(len(lRunes)) / float64(len(l)) * float64(width)
+	runeWidth := float64(len(lRunes)) / float64(lWidth) * float64(width)
 	cutRuneLen := int(runeWidth * percent)
 	return string(lRunes[:cutRuneLen]) + "..."
 }

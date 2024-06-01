@@ -5,6 +5,8 @@ import (
 	"math"
 	"strings"
 	"video-downloader-go/internal/util/mylog/color"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // Item 是一个日志项的通用接口
@@ -89,8 +91,8 @@ func (hi *HintItem) DownloadBar(percent int) string {
 
 var (
 	StatusItemExecutingFlags = []string{`\`, `|`, `/`, `-`} // 正在执行的状态标志数组
-	StatusItemOk             = "\u2714"                     // 对勾
-	StatusItemError          = "\u2718"                     // 错误叉叉
+	StatusItemOk             = "√"                          // 对勾
+	StatusItemError          = "x"                          // 错误叉叉
 	StatusItemWaiting        = "-"                          // 正在等待
 )
 
@@ -153,15 +155,17 @@ func (ni *NameItem) String(bar *Bar) string {
 		return ""
 	}
 	name := bar.Name
+	nameWidth := runewidth.StringWidth(name)
 	nameRunes := []rune(name)
 
-	// 1 name 长度没有超出 Len 长度, 直接在左边补充相应数量的空格
-	sub := ni.Len - len(nameRunes)
+	// 1 name 长度没有超出 Len 长度, 直接在右边补充相应数量的空格
+	sub := ni.Len - nameWidth
 	if sub >= 0 {
 		return name + strings.Repeat(" ", sub)
 	}
 
 	// 2 name 长度超出了 Len 长度, 需要进行截断
-	cutStr := string(nameRunes[:ni.Len-len(NameItemOversizeSuffix)])
+	newLen := int(float64(ni.Len) / float64(nameWidth) * float64(len(nameRunes)))
+	cutStr := string(nameRunes[:newLen])
 	return cutStr + NameItemOversizeSuffix
 }

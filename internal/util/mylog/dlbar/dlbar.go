@@ -172,6 +172,7 @@ func (b *Bar) UpdateSize(size int64) {
 	b.ChildStatus = BarChildStatusDownload
 }
 
+// String 将每个 item 转换成字符串后使用空格拼接返回
 func (b *Bar) String() string {
 	b.Mu.Lock()
 	defer b.Mu.Unlock()
@@ -183,4 +184,13 @@ func (b *Bar) String() string {
 		}
 	}
 	return sb.String()
+}
+
+// Group 将每个 item 转换成字符串后以切片形式返回
+func (b *Bar) Group() []string {
+	res := []string{}
+	for _, item := range b.Items {
+		res = append(res, item.String(b))
+	}
+	return res
 }
