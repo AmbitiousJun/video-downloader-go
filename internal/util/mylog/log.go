@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	PanelMaxLogs = 5 // 面板中最大的日志条数
+	PanelMaxLogs         = 5           // 面板中最大的日志条数
+	PanelRefreshInterval = time.Second // 日志面板刷新间隔
 )
 
 // Panel 是全局唯一日志面板
@@ -80,6 +81,8 @@ func NewPanel(DlSpeedGetter func() string) *Panel {
 // BlockPanel 阻塞日志面板打印
 func BlockPanel() {
 	BlockFlag = true
+	// 线程睡眠一个刷新周期, 确保日志面板不会中途刷新
+	time.Sleep(PanelRefreshInterval)
 	doNotClear = true
 }
 
@@ -96,7 +99,7 @@ func Start() {
 	go func() {
 		ctx := appctx.Context()
 		defer appctx.WaitGroup().Done()
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(PanelRefreshInterval)
 		defer ticker.Stop()
 		for {
 			select {
@@ -302,7 +305,7 @@ func Success(l string) {
 func cutLog(l string) string {
 	width, _ := GetTerminalSize()
 	lWidth := runewidth.StringWidth(l)
-	percent := 0.7
+	percent := 0.5
 
 	// 1 l 长度合法, 无需额外的判断
 	if float64(lWidth) <= float64(width)*percent {
