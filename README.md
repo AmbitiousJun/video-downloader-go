@@ -178,7 +178,7 @@ transfer:
 
 ![程序自动获取 format code](./img/5.jpg)
 
-如果不想要自己提前手动获取 format code，那么 config.yml 中，`downloader.youtube-dl.format-codes` 配置就不需要传递任何内容，像这样：
+如果不想要自己提前手动获取 format code，那么 config.yml 中，`decoder.youtube-dl.format-codes` 配置就不需要传递任何内容，像这样：
 
 ```yml
 decoder: # 解码器相关配置
