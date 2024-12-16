@@ -21,8 +21,7 @@ const (
 	ConfigDir = "../../config" // 配置文件目录
 	LibDir    = "../../lib"    // 依赖目录
 
-	OutputDir = "/Users/ambitious/Downloads" // zip 输出目录
-	// OutputDir = "C:/Users/Ambitious/Downloads" // zip 输出目录
+	OutputDir = "../../dist/zip" // zip 输出目录
 
 	ExecName = "start" // 可执行文件名称
 )
@@ -38,6 +37,9 @@ func main() {
 	dst, err := os.Stat(DistDir)
 	if err != nil || !dst.IsDir() {
 		panic("dist 目录检测失败")
+	}
+	if err := os.MkdirAll(OutputDir, os.ModePerm); err != nil {
+		log.Panicf("zip 输出目录初始化失败: %v", err)
 	}
 
 	var wg sync.WaitGroup
