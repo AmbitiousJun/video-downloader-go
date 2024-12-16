@@ -1,8 +1,10 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strings"
+	"video-downloader-go/internal/lib/ytdlp"
 	"video-downloader-go/internal/util/myfile"
 
 	"github.com/pkg/errors"
@@ -67,18 +69,19 @@ func Load(configFilePath string) error {
 
 // 读取依赖路径地址
 func readDependencyPaths() {
+	if err := ytdlp.AutoDownloadExec(); err != nil {
+		log.Panicf("yt-dlp 自动下载失败: %v, 请尝试重新运行程序或手动下载", err)
+	}
+	YoutubeDlPath = ytdlp.ExecPath()
+
 	os := strings.TrimSpace(G.Os)
-	FfmpegPath, YoutubeDlPath = "ffmpeg", "youtube-dl"
+	FfmpegPath = "ffmpeg"
 	if os == "" {
 		return
 	}
 	path, err := checkPath("config/ffmpeg/ffmpeg-" + os)
 	if err == nil {
 		FfmpegPath = path
-	}
-	path, err = checkPath("config/youtube-dl/youtube-dl-" + os)
-	if err == nil {
-		YoutubeDlPath = path
 	}
 }
 
