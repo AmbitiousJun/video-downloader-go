@@ -3,7 +3,6 @@ package ytdlp
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -64,17 +63,17 @@ func AutoDownloadExec() error {
 			return fmt.Errorf("二进制文件路径被目录占用: %s, 请手动处理后尝试重启服务", execPath)
 		}
 		execOk = true
-		log.Println(color.ToGreen("yt-dlp 环境检测通过 ✓"))
+		fmt.Println(color.ToGreen("yt-dlp 环境检测通过 ✓"))
 		return nil
 	}
 
-	log.Println(color.ToBlue("检测不到 yt-dlp 环境, 即将开始自动下载"))
+	fmt.Println(color.ToBlue("检测不到 yt-dlp 环境, 即将开始自动下载"))
 
 	if err = os.MkdirAll(parentPath, os.ModePerm); err != nil {
 		return fmt.Errorf("数据目录异常: %s, err: %v", parentPath, err)
 	}
 
-	log.Printf(color.ToBlue("yt-dlp 下载发布页: %s"), ReleasePage)
+	fmt.Printf(color.ToBlue("yt-dlp 下载发布页: %s"), ReleasePage)
 
 	_, resp, err := https.Request(http.MethodGet, ReleasePage+"/"+execName, nil, nil, true)
 	if err != nil {
@@ -95,6 +94,6 @@ func AutoDownloadExec() error {
 
 	// 标记就绪状态
 	execOk = true
-	log.Printf(color.ToGreen("yt-dlp 自动下载成功 ✓, 路径: %s"), execPath)
+	fmt.Printf(color.ToGreen("yt-dlp 自动下载成功 ✓, 路径: %s"), execPath)
 	return nil
 }
