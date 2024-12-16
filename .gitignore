@@ -1,3 +1,5 @@
 dist
 **/cookie-files
+config/ffmpeg
+config/yt-dlp
 config/data.txt
