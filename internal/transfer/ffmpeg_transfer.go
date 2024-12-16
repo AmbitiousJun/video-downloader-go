@@ -60,15 +60,43 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string, bar *dlbar.Bar) error
 	if err != nil {
 		return errors.Wrap(err, "排序文件失败")
 	}
-	err = ft.concatFiles(tsDir, tsFilePaths, outputPath, bar)
+	err = ft.ConcatFilesByTxt(tsDir, tsFilePaths, outputPath, bar)
 	if err != nil {
 		return errors.Wrap(err, "合并 ts 文件时出现错误")
 	}
 	return nil
 }
 
+// ConcatFilesByTxt 先将 ts 切片编排到 txt 文件中, 再调用 ffmpeg 一次性合并
+func (ft *ffmpegTransfer) ConcatFilesByTxt(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
+	bar.TransferHint("正在合并切片文件 (0%)")
+
+	// 1 将切片信息写入 tsDir
+	filelistContent := strings.Builder{}
+	for idx, tsPath := range tsFilePaths {
+		baseName := filepath.Base(tsPath)
+		filelistContent.WriteString(fmt.Sprintf("file '%s'", baseName))
+		if idx < len(tsFilePaths)-1 {
+			filelistContent.WriteByte('\n')
+		}
+	}
+	filelistPath := filepath.Join(tsDir, "filelist.txt")
+	if err := os.WriteFile(filelistPath, []byte(filelistContent.String()), os.ModePerm); err != nil {
+		return fmt.Errorf("写入切片编排信息失败: %v", err)
+	}
+	bar.TransferHint("正在合并切片文件 (50%)")
+
+	// 2 调用 ffmpeg 进行合并
+	cmd := exec.Command(config.FfmpegPath, "-f", "concat", "-safe", "0", "-i", filelistPath, "-c", "copy", outputPath)
+	if err := ft.executeCmd(cmd); err != nil {
+		return fmt.Errorf("调用 ffmpeg 出现异常: %v", err)
+	}
+	bar.TransferHint("正在合并切片文件 (100%)")
+	return nil
+}
+
 // 核心的合并 ts 文件逻辑
-func (ft *ffmpegTransfer) concatFiles(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
+func (ft *ffmpegTransfer) ConcatFiles(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
 	tempTsFilePath := fmt.Sprintf("%s/ts_%d.ts", tsDir, math.MaxInt32)
 	tempDestFilePath := strings.Replace(outputPath, ".mp4", ".ts", -1)
 	if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
