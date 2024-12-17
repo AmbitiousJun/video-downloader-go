@@ -18,7 +18,6 @@ type Config struct {
 	Downloader Downloader     `yaml:"downloader"` // 下载器
 	Transfer   Transfer       `yaml:"transfer"`   // 转换器
 	Decoder    Decoder        `yaml:"decoder"`    // 解析器
-	Os         string         `yaml:"os"`         // 运行操作系统
 	Customs    []CustomConfig `yaml:"customs"`    // 定制化配置
 }
 

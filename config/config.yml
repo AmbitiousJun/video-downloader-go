@@ -32,17 +32,6 @@ transfer:
   use: ffmpeg # 要选用哪个转码器，可选值：ffmpeg
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
-# 在什么平台上运行
-#
-# 这个配置的作用是为了匹配 ffmpeg 和 youtube-dl 的可执行文件
-# 举个例子：在 config/ffmpeg 目录下，有一个 ffmpeg-windows-x86.exe 的 ffmpeg 可执行文件
-# 那么 os 就配置为 windows-x86, 程序会自动去 config 目录中找
-# 
-# 默认自带 macos 和 windows-x86 的可执行文件，如果程序无法正常运行，需要手动下载好自己系统匹配的格式并放到相应目录下
-# ffmpeg: https://ffmpeg.org/download.html
-# youtube-dl: https://github.com/yt-dlp/yt-dlp/releases
-os: macos
-
 # 针对不同的域名进行定制化配置
 # 
 # 目前只支持针对 decoder 进行定制化配置
