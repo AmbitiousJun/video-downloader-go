@@ -8,10 +8,10 @@ rm -rf ./dist
 mkdir -p dist
 
 # 定义平台数组
-platforms=("darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64" "windows/amd64" "windows/arm64")
+platforms=("darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64" "linux/386" "linux/arm" "windows/amd64" "windows/arm64" "windows/386" "windows/arm")
 
 # 版本号
-version=1.5.0
+version=1.6.0
 
 # 循环编译并重命名可执行文件
 for platform in "${platforms[@]}"
@@ -31,7 +31,10 @@ do
     fi
 
     # 编译
-    GOOS=${platform_info[0]} GOARCH=${platform_info[1]} go build -o "dist/$output_name" main.go
+    CGO_ENABLED=0 GOOS=${platform_info[0]} GOARCH=${platform_info[1]} go build -o "dist/$output_name" main.go
+
+    # 赋予可执行权限
+    chmod +x "dist/$output_name"
 
     echo "Built $output_name"
 done
