@@ -23,6 +23,10 @@ func IsRetryableError(err error) bool {
 
 // 输出重试错误
 func PrintRetryError(prefix string, err error, seconds int64) {
-	mylog.Warnf("%v：%v，%d 秒后重试", prefix, err.Error(), seconds)
+	errMsg := ""
+	if err != nil {
+		errMsg = err.Error()
+	}
+	mylog.Warnf("%v：%v，%d 秒后重试", prefix, errMsg, seconds)
 	time.Sleep(time.Second * time.Duration(seconds))
 }
