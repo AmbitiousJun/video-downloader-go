@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"video-downloader-go/internal/lib/ffmpeg"
 	"video-downloader-go/internal/lib/ytdlp"
-	"video-downloader-go/internal/util/myfile"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -74,27 +74,8 @@ func readDependencyPaths() {
 	}
 	YoutubeDlPath = ytdlp.ExecPath()
 
-	os := strings.TrimSpace(G.Os)
-	FfmpegPath = "ffmpeg"
-	if os == "" {
-		return
+	if err := ffmpeg.AutoDownloadExec(); err != nil {
+		log.Panicf("ffmpeg 自动下载失败: %v, 请尝试重新运行程序或手动下载", err)
 	}
-	path, err := checkPath("config/ffmpeg/ffmpeg-" + os)
-	if err == nil {
-		FfmpegPath = path
-	}
-}
-
-// 检查路径的文件是否存在
-// @param path 要检查的路径
-// @return 检测成功的路径
-func checkPath(path string) (string, error) {
-	validExtensions := []string{"", ".exe", ".sh", ".cmd"}
-	for _, ext := range validExtensions {
-		newPath := path + ext
-		if myfile.FileExist(newPath) {
-			return newPath, nil
-		}
-	}
-	return "", errors.New("找不到依赖可执行文件")
+	FfmpegPath = ffmpeg.ExecPath()
 }
