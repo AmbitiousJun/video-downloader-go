@@ -20,7 +20,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ffmpegTransfer struct{}
+// concatFileFunc 合并文件函数
+type concatFileFunc func(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error
+
+type ffmpegTransfer struct {
+	concatFileFunc concatFileFunc
+}
 
 func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string, bar *dlbar.Bar) error {
 	fi, err := os.Stat(tsDir)
@@ -60,7 +65,7 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string, bar *dlbar.Bar) error
 	if err != nil {
 		return errors.Wrap(err, "排序文件失败")
 	}
-	err = ft.ConcatFilesByTxt(tsDir, tsFilePaths, outputPath, bar)
+	err = ft.concatFileFunc(tsDir, tsFilePaths, outputPath, bar)
 	if err != nil {
 		return errors.Wrap(err, "合并 ts 文件时出现错误")
 	}
@@ -68,7 +73,7 @@ func (ft *ffmpegTransfer) Ts2Mp4(tsDir, outputPath string, bar *dlbar.Bar) error
 }
 
 // ConcatFilesByTxt 先将 ts 切片编排到 txt 文件中, 再调用 ffmpeg 一次性合并
-func (ft *ffmpegTransfer) ConcatFilesByTxt(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
+func ConcatFilesByTxt(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
 	bar.TransferHint("正在合并切片文件 (0%)")
 
 	// 1 将切片信息写入 tsDir
@@ -88,7 +93,7 @@ func (ft *ffmpegTransfer) ConcatFilesByTxt(tsDir string, tsFilePaths []string, o
 
 	// 2 调用 ffmpeg 进行合并
 	cmd := exec.Command(config.FfmpegPath, "-f", "concat", "-safe", "0", "-i", filelistPath, "-c", "copy", outputPath)
-	if err := ft.executeCmd(cmd); err != nil {
+	if err := executeCmd(cmd); err != nil {
 		return fmt.Errorf("调用 ffmpeg 出现异常: %v", err)
 	}
 	bar.TransferHint("正在合并切片文件 (100%)")
@@ -96,7 +101,7 @@ func (ft *ffmpegTransfer) ConcatFilesByTxt(tsDir string, tsFilePaths []string, o
 }
 
 // 核心的合并 ts 文件逻辑
-func (ft *ffmpegTransfer) ConcatFiles(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
+func ConcatFilesByStr(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
 	tempTsFilePath := fmt.Sprintf("%s/ts_%d.ts", tsDir, math.MaxInt32)
 	tempDestFilePath := strings.Replace(outputPath, ".mp4", ".ts", -1)
 	if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
@@ -130,7 +135,7 @@ func (ft *ffmpegTransfer) ConcatFiles(tsDir string, tsFilePaths []string, output
 		current += handleSize
 		concat := concatBuilder.String()
 		cmd := exec.Command(config.FfmpegPath, "-i", concat, "-c", "copy", tempDestFilePath)
-		err := ft.executeCmd(cmd)
+		err := executeCmd(cmd)
 		if err != nil {
 			return errors.Wrap(err, "执行 ffmpeg 合并命令失败")
 		}
@@ -150,7 +155,7 @@ func (ft *ffmpegTransfer) ConcatFiles(tsDir string, tsFilePaths []string, output
 		return errors.New("检测不到最终的 ts 文件")
 	}
 	cmd := exec.Command(config.FfmpegPath, "-i", "concat:"+tempTsFilePath, "-c", "copy", outputPath)
-	if err := ft.executeCmd(cmd); err != nil {
+	if err := executeCmd(cmd); err != nil {
 		return errors.Wrap(err, "合并最终视频文件失败")
 	}
 	if e, d := myfile.DeleteFileIfExist(tempTsFilePath); e && !d {
@@ -160,7 +165,7 @@ func (ft *ffmpegTransfer) ConcatFiles(tsDir string, tsFilePaths []string, output
 }
 
 // 执行命令行命令
-func (ft *ffmpegTransfer) executeCmd(cmd *exec.Cmd) error {
+func executeCmd(cmd *exec.Cmd) error {
 	_, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, "执行命令时出错")

@@ -103,7 +103,7 @@ func downloadM3U8(dmt *meta.Download, handlerFunc ProgressHandler, multiThread b
 		return errors.Wrap(err, "m3u8 下载失败")
 	}
 	// 4 合并文件
-	if err = m3u8.Merge(tempDirPath, dmt.LogBar); err != nil {
+	if err = m3u8.Merge(tempDirPath, dmt); err != nil {
 		dmt.LogBar.ErrorHint("合并分片失败")
 		return errors.Wrap(err, "合并 ts 文件失败")
 	}

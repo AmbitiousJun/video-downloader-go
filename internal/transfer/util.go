@@ -1,24 +1,19 @@
 package transfer
 
 import (
-	"sync"
 	"video-downloader-go/internal/config"
 )
 
-// 获取一个全局唯一的 ts 转换器
-var Instance = (func() func() TsTransfer {
-	var t TsTransfer = nil
-	var once sync.Once
-	return func() TsTransfer {
-		once.Do(func() {
-			tfType := config.G.Transfer.Use
-			switch tfType {
-			case config.TransferFfmpeg:
-				t = &ffmpegTransfer{}
-			default:
-				panic("没有初始化 ts 转换器类型")
-			}
-		})
-		return t
+// 获取 ts 转换器实例
+// 根据 originUrl 使用不同的转换器
+func Instance(originUrl string) TsTransfer {
+	tfType := config.G.Transfer.CustomUse(originUrl)
+	switch tfType {
+	case config.TransferFfmpegStr:
+		return &ffmpegTransfer{concatFileFunc: ConcatFilesByStr}
+	case config.TransferFfmpegTxt:
+		return &ffmpegTransfer{concatFileFunc: ConcatFilesByTxt}
+	default:
+		panic("没有初始化 ts 转换器类型")
 	}
-})()
+}

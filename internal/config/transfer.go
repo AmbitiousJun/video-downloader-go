@@ -2,10 +2,7 @@
 package config
 
 import (
-	"fmt"
-	"os/exec"
 	"strings"
-	"video-downloader-go/internal/util/mylog"
 
 	"github.com/pkg/errors"
 )
@@ -16,48 +13,47 @@ type Transfer struct {
 }
 
 const (
-	TransferFfmpeg = "ffmpeg" // ffmpeg 转换器
+	TransferFfmpegStr = "ffmpeg_str" // ffmpeg 转换器
+	TransferFfmpegTxt = "ffmpeg_txt" // ffmpeg 转换器
 )
 
 // 默认的 ts 文件名序号匹配正则
 const DefaultFilenameRegex = "_(\\d+)\\."
 
-// 检查转换器配置
-func checkTransferConfig() error {
-	cfg := G.Transfer
-	cfg.Use = strings.TrimSpace(cfg.Use)
-	validTypes := []string{TransferFfmpeg}
+// checkFields 检查转换器字段是否合法
+func (t *Transfer) checkFields(allowEmpty bool) error {
+	t.Use = strings.TrimSpace(t.Use)
+	validTypes := []string{TransferFfmpegStr, TransferFfmpegTxt}
+
+	if t.Use == "" && !allowEmpty {
+		return errors.New("转换器类型配置错误，可选值：" + strings.Join(validTypes, ","))
+	}
+
 	flag := false
-	for _, valid := range validTypes {
-		if valid == cfg.Use {
-			flag = true
+	if t.Use != "" {
+		for _, valid := range validTypes {
+			if valid == t.Use {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			return errors.New("转换器类型配置错误，可选值：" + strings.Join(validTypes, ","))
 		}
 	}
-	if !flag {
-		return errors.New("转换器类型配置错误，可选值：ffmpeg")
-	}
-	cfg.TsFilenameRegex = strings.TrimSpace(cfg.TsFilenameRegex)
-	if cfg.TsFilenameRegex == "" {
-		cfg.TsFilenameRegex = DefaultFilenameRegex
-	}
-	if cfg.Use == TransferFfmpeg {
-		err := checkFfmpegEnv()
-		return errors.Wrap(err, "转换器配置错误")
+
+	t.TsFilenameRegex = strings.TrimSpace(t.TsFilenameRegex)
+	if t.TsFilenameRegex == "" {
+		t.TsFilenameRegex = DefaultFilenameRegex
 	}
 	return nil
 }
 
-// 检查 ffmpeg 环境
-func checkFfmpegEnv() error {
-	cmd := exec.Command(FfmpegPath, "--help")
-	output, err := cmd.Output()
-	if err != nil {
-		return errors.Wrap(err, "检查 ffmpeg 环境失败")
+// 检查转换器配置
+func checkTransferConfig() error {
+	cfg := G.Transfer
+	if err := cfg.checkFields(false); err != nil {
+		return err
 	}
-	result := string(output)
-	if !strings.Contains(result, "usage: ffmpeg") {
-		return errors.New(fmt.Sprintf("检查 ffmpeg 环境失败：%v", result))
-	}
-	mylog.Success("检查 ffmpeg 环境成功")
 	return nil
 }
