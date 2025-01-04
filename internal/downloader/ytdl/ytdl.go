@@ -2,6 +2,7 @@ package ytdl
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"video-downloader-go/internal/config"
@@ -50,7 +51,7 @@ func (d *YtDlDownloader) Exec(dmt *meta.Download, handlerFunc coredl.ProgressHan
 
 	for i, link := range links {
 		mylog.Infof("正在处理第 %d / %d 个子任务，文件名：%s", i+1, size, dmt.FileName)
-		tmpDmt := meta.NewDownloadMeta(link, strings.Replace(dmt.FileName, ".mp4", getFilePartSuffix(i), -1), dmt.OriginUrl)
+		tmpDmt := meta.NewDownloadMeta(link, strings.Replace(dmt.FileName, ".mp4", d.getFilePartSuffix(i), -1), dmt.OriginUrl)
 		tmpDmt.LogBar = dmt.LogBar
 
 		var err error
@@ -67,7 +68,7 @@ func (d *YtDlDownloader) Exec(dmt *meta.Download, handlerFunc coredl.ProgressHan
 		mylog.Successf("第 %d / %d 个子任务处理完成，文件名：%s", i+1, size, dmt.FileName)
 	}
 
-	if err := mergeSubTask(dmt, size); err != nil {
+	if err := d.mergeSubTask(dmt, size); err != nil {
 		return errors.Wrap(err, "合并子任务失败")
 	}
 
@@ -75,13 +76,39 @@ func (d *YtDlDownloader) Exec(dmt *meta.Download, handlerFunc coredl.ProgressHan
 }
 
 // mergeSubTask 调用 ffmpeg 将子任务合并在一起
-func mergeSubTask(dmt *meta.Download, size int) error {
+func (d *YtDlDownloader) mergeSubTask(dmt *meta.Download, size int) error {
+	if size == 1 {
+		return d.mergeSingleSubTask(dmt)
+	}
+	return d.mergeMultiSubTask(dmt, size)
+}
+
+// mergeSingleSubTask 合并单个子任务
+func (d *YtDlDownloader) mergeSingleSubTask(dmt *meta.Download) error {
+	partName := strings.Replace(dmt.FileName, ".mp4", d.getFilePartSuffix(0), -1)
+
+	// 判断文件是否存在
+	stat, err := os.Stat(partName)
+	if err != nil || stat.IsDir() {
+		return fmt.Errorf("获取文件状态失败: %s", partName)
+	}
+
+	// 直接重命名文件
+	if err := os.Rename(partName, dmt.FileName); err != nil {
+		return fmt.Errorf("合并失败: %s", partName)
+	}
+
+	return nil
+}
+
+// mergeMultiSubTask 合并多个子任务
+func (d *YtDlDownloader) mergeMultiSubTask(dmt *meta.Download, size int) error {
 	mylog.Infof("正在合并子任务，文件名：%s", dmt.FileName)
 
 	// 输入需要合并的子任务
 	commands := []string{}
 	for i := 0; i < size; i++ {
-		commands = append(commands, "-i", strings.Replace(dmt.FileName, ".mp4", getFilePartSuffix(i), -1))
+		commands = append(commands, "-i", strings.Replace(dmt.FileName, ".mp4", d.getFilePartSuffix(i), -1))
 	}
 
 	// 直接拷贝视频流和音频流，不进行转码
@@ -102,7 +129,7 @@ func mergeSubTask(dmt *meta.Download, size int) error {
 	mylog.Successf("子任务合并完成，正在删除子任务，文件名：%s", dmt.FileName)
 	flag := true
 	for i := 0; i < size; i++ {
-		partName := strings.Replace(dmt.FileName, ".mp4", getFilePartSuffix(i), 1)
+		partName := strings.Replace(dmt.FileName, ".mp4", d.getFilePartSuffix(i), 1)
 		if e, d := myfile.DeleteFileIfExist(partName); e && !d {
 			mylog.Warnf("子任务删除失败，文件名：%s", partName)
 			flag = false
@@ -115,6 +142,6 @@ func mergeSubTask(dmt *meta.Download, size int) error {
 }
 
 // getFilePartSuffix 根据子任务索引返回子任务的文件后缀
-func getFilePartSuffix(i int) string {
+func (d *YtDlDownloader) getFilePartSuffix(i int) string {
 	return fmt.Sprintf("_part%d.mp4", i)
 }

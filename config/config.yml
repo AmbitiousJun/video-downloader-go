@@ -27,15 +27,18 @@ downloader:
 
 # ts 转换器配置
 #
-# 正常情况下，该配置不需要变动
+# 对于不同的 m3u8, 有的转换器合并后的视频文件会有跳帧问题，可以尝试更换转换器
 transfer:
-  use: ffmpeg # 要选用哪个转码器，可选值：ffmpeg
+  use: ffmpeg_txt # 要选用哪个转码器，可选值：ffmpeg_str, ffmpeg_txt
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
 # 针对不同的域名进行定制化配置
 # 
-# 目前只支持针对 decoder 进行定制化配置
+# 针对 decoder 进行定制化配置
 # 可配置的属性：use, resource-type, youtube-dl.cookies-from, youtube-dl.format-codes, youtube-dl.remember-format
+#
+# 针对 transfer 进行定制化配置
+# 可配置的属性：use
 customs:
   - decoder: 
       use: youtube-dl
@@ -43,6 +46,8 @@ customs:
         cookies-from: chrome
         format-codes:
         remember-format: 1
+    transfer:
+      use: ffmpeg_str
     hosts: # 对哪些域名生效，必须配置完整，有端口也要加上
       - www.mgtv.com
       - www.youtube.com

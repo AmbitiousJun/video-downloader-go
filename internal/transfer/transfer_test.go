@@ -40,7 +40,7 @@ func TestFfmpegTransfer(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	ft := transfer.Instance()
+	ft := transfer.Instance("")
 	err = ft.Ts2Mp4("/Users/ambitious/Downloads/测试.mp4_temp_ts_files", "/Users/ambitious/Downloads/测试.mp4", nil)
 	if err != nil {
 		t.Error(err)

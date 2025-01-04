@@ -14,7 +14,7 @@ func TestTsTransferInit(t *testing.T) {
 	defer appctx.WaitGroup().Wait()
 	defer appctx.CancelFunc()()
 	config.Load("/Users/ambitious/Desktop/学习/Go/projects/video-downloader-go/config/config.yml")
-	fmt.Println(transfer.Instance())
+	fmt.Println(transfer.Instance(""))
 }
 
 func TestReadTsUrls(t *testing.T) {

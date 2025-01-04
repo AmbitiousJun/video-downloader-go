@@ -10,16 +10,21 @@ import (
 )
 
 type CustomConfig struct {
-	Decoder Decoder  `yaml:"decoder"` // 解析器配置
-	Hosts   []string `yaml:"hosts"`   // 指定的域名列表
+	Decoder  Decoder  `yaml:"decoder"`  // 解析器配置
+	Transfer Transfer `yaml:"transfer"` // 转换器配置
+	Hosts    []string `yaml:"hosts"`    // 指定的域名列表
 }
 
 // host2Decoder 保存每个 host 的定制化解析器配置
 var host2Decoder map[string]*Decoder
 
+// host2Transfer 保存每个 host 的定制化转换器配置
+var host2Transfer map[string]*Transfer
+
 // checkCustomConfig 执行定制化配置的初始化
 func checkCustomConfig() error {
 	host2Decoder = make(map[string]*Decoder)
+	host2Transfer = make(map[string]*Transfer)
 	customs := G.Customs
 
 	for i, custom := range customs {
@@ -30,13 +35,19 @@ func checkCustomConfig() error {
 			return errors.Wrapf(err, "请检查定制化的解析器配置, index: %v", i)
 		}
 
-		// 2 保存 host 映射
+		// 2 检查转换器配置
+		if err := copyCustom.Transfer.checkFields(true); err != nil {
+			return errors.Wrapf(err, "请检查定制化的解析器配置, index: %v", i)
+		}
+
+		// 3 保存 host 映射
 		for _, host := range copyCustom.Hosts {
 			h := strings.TrimSpace(host)
 			if h == "" {
 				continue
 			}
 			host2Decoder[h] = &copyCustom.Decoder
+			host2Transfer[h] = &copyCustom.Transfer
 		}
 	}
 
@@ -126,4 +137,35 @@ func resolveDecoderByUrl(dcUrl string, defaultDecoder *Decoder) *Decoder {
 	}
 
 	return defaultDecoder
+}
+
+// CustomUse 优先使用定制化的转换器类型
+func (t *Transfer) CustomUse(originUrl string) string {
+	targetTransfer := resolveTransferByUrl(originUrl, nil)
+	if targetTransfer == nil || targetTransfer.Use == "" {
+		return t.Use
+	}
+	return targetTransfer.Use
+}
+
+// resolveTransferByUrl 根据解析 url 返回解析器
+// 优先返回定制化配置解析器
+func resolveTransferByUrl(originUrl string, defaultTransfer *Transfer) *Transfer {
+	if defaultTransfer == nil {
+		// 默认使用全局转换器
+		defaultTransfer = &G.Transfer
+	}
+
+	u, err := url.Parse(originUrl)
+	if err != nil {
+		// 解析 url 异常
+		return defaultTransfer
+	}
+
+	if target, ok := host2Transfer[u.Host]; ok {
+		// 成功找到匹配的定制化解析器配置
+		return target
+	}
+
+	return defaultTransfer
 }
