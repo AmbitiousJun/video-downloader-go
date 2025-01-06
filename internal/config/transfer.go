@@ -13,8 +13,9 @@ type Transfer struct {
 }
 
 const (
-	TransferFfmpegStr = "ffmpeg_str" // ffmpeg 转换器
-	TransferFfmpegTxt = "ffmpeg_txt" // ffmpeg 转换器
+	TransferFfmpegStr   = "ffmpeg_str"    // ffmpeg 转换器
+	TransferFfmpegStrV2 = "ffmpeg_str_v2" // ffmpeg 转换器
+	TransferFfmpegTxt   = "ffmpeg_txt"    // ffmpeg 转换器
 )
 
 // 默认的 ts 文件名序号匹配正则
@@ -23,7 +24,7 @@ const DefaultFilenameRegex = "_(\\d+)\\."
 // checkFields 检查转换器字段是否合法
 func (t *Transfer) checkFields(allowEmpty bool) error {
 	t.Use = strings.TrimSpace(t.Use)
-	validTypes := []string{TransferFfmpegStr, TransferFfmpegTxt}
+	validTypes := []string{TransferFfmpegStr, TransferFfmpegTxt, TransferFfmpegStrV2}
 
 	if t.Use == "" && !allowEmpty {
 		return errors.New("转换器类型配置错误，可选值：" + strings.Join(validTypes, ","))

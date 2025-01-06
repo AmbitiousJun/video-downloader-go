@@ -56,6 +56,12 @@ func AutoDownloadExec() error {
 	}
 	execPath = fmt.Sprintf("%s/%s", parentPath, execName)
 
+	defer func() {
+		if execOk {
+			execPath, _ = filepath.Abs(execPath)
+		}
+	}()
+
 	// 如果文件不存在, 触发自动下载
 	stat, err := os.Stat(execPath)
 	if err == nil {

@@ -35,6 +35,7 @@ var arch2ExecNameMap = map[string]string{
 var (
 	parentPath = filepath.Join(constant.Dir_DataRoot, "ffmpeg") // 二进制文件存放根路径
 	execPath   string                                           // 根据当前系统架构自动生成一个二进制文件地址
+	execOk     bool                                             // 标记二进制是否检测通过
 )
 
 func ExecPath() string {
@@ -55,12 +56,19 @@ func AutoDownloadExec() error {
 	}
 	execPath = fmt.Sprintf("%s/%s", parentPath, execName)
 
+	defer func() {
+		if execOk {
+			execPath, _ = filepath.Abs(execPath)
+		}
+	}()
+
 	// 如果文件不存在, 触发自动下载
 	stat, err := os.Stat(execPath)
 	if err == nil {
 		if stat.IsDir() {
 			return fmt.Errorf("二进制文件路径被目录占用: %s, 请手动处理后尝试重启服务", execPath)
 		}
+		execOk = true
 		fmt.Println(color.ToGreen("ffmpeg 环境检测通过 ✓"))
 		return nil
 	}
@@ -92,5 +100,6 @@ func AutoDownloadExec() error {
 
 	// 标记就绪状态
 	fmt.Printf(color.ToGreen("ffmpeg 自动下载成功 ✓, 路径: %s\n"), execPath)
+	execOk = true
 	return nil
 }

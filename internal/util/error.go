@@ -3,7 +3,8 @@ package util
 import "github.com/pkg/errors"
 
 var (
-	NetworkError = errors.New("网络异常")
+	NetworkError         = errors.New("网络异常")
+	ConnectionResetError = errors.New("connection reset")
 )
 
 // AnyError 从给定的两个错误中返回任意一个不为空的错误

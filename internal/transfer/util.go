@@ -13,6 +13,8 @@ func Instance(originUrl string) TsTransfer {
 		return &ffmpegTransfer{concatFileFunc: ConcatFilesByStr}
 	case config.TransferFfmpegTxt:
 		return &ffmpegTransfer{concatFileFunc: ConcatFilesByTxt}
+	case config.TransferFfmpegStrV2:
+		return &ffmpegTransfer{concatFileFunc: ConcatFilesByStrV2}
 	default:
 		panic("没有初始化 ts 转换器类型")
 	}
