@@ -1,5 +1,5 @@
-//go:build !window
-// +build !window
+//go:build !windows
+// +build !windows
 
 package config
 
