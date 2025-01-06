@@ -3,11 +3,13 @@ package transfer
 import (
 	"fmt"
 	"io/fs"
+	"log"
 	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -97,6 +99,47 @@ func ConcatFilesByTxt(tsDir string, tsFilePaths []string, outputPath string, bar
 		return fmt.Errorf("调用 ffmpeg 出现异常: %v", err)
 	}
 	bar.TransferHint("正在合并切片文件 (100%)")
+	return nil
+}
+
+// 核心的合并 ts 文件逻辑
+func ConcatFilesByStrV2(tsDir string, tsFilePaths []string, outputPath string, bar *dlbar.Bar) error {
+	bar.TransferHint("正在合并切片文件 (0%)")
+
+	// 1 构建初始命令, 跳转到 ts 所在目录
+	cmdBuilder := strings.Builder{}
+	cmdBuilder.WriteString("cd ")
+	cmdBuilder.WriteString(fmt.Sprintf("'%s'", tsDir))
+	cmdBuilder.WriteString(" && ")
+	bar.TransferHint("正在合并切片文件 (20%)")
+
+	// 2 遍历 ts 列表生成命令
+	concatPlaceholder := "{{concat}}"
+	ffmpegCmd := fmt.Sprintf(`'%s' -i 'concat:%s' -c copy '%s'`, config.FfmpegPath, concatPlaceholder, outputPath)
+	concatBuilder := strings.Builder{}
+	for idx, tsPath := range tsFilePaths {
+		if idx != 0 {
+			concatBuilder.WriteString("|")
+		}
+		concatBuilder.WriteString(filepath.Base(tsPath))
+	}
+	ffmpegCmd = strings.Replace(ffmpegCmd, concatPlaceholder, concatBuilder.String(), -1)
+	cmdBuilder.WriteString(ffmpegCmd)
+	bar.TransferHint("正在合并切片文件 (40%)")
+
+	// 3 执行命令
+	shellCmd := []string{"sh", "-c"}
+	if runtime.GOOS == "windows" {
+		shellCmd = []string{"cmd", "/C"}
+	}
+	cmd := exec.Command(shellCmd[0], shellCmd[1], cmdBuilder.String())
+	if err := executeCmd(cmd); err != nil {
+		log.Println(err)
+		os.Exit(0)
+		return fmt.Errorf("调用 ffmpeg 出现异常: %v", err)
+	}
+	bar.TransferHint("正在合并切片文件 (100%)")
+
 	return nil
 }
 
