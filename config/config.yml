@@ -28,6 +28,10 @@ downloader:
 # ts 转换器配置
 #
 # 对于不同的 m3u8, 有的转换器合并后的视频文件会有跳帧问题，可以尝试更换转换器
+#
+# 使用 ffmpeg_str_v2 合并时可能会导致程序异常出错退出
+# 原因是系统允许同时打开文件描述符的数量过低, 解决方法:
+# macos/linux 执行命令: `ulimit -n 65535`
 transfer:
   use: ffmpeg_str_v2 # 要选用哪个转码器，可选值：ffmpeg_str, ffmpeg_txt, ffmpeg_str_v2
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
