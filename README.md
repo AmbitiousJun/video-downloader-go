@@ -18,9 +18,9 @@
 
 ## 适用场景
 
-- 批量下载视频
+- 多线程批量下载视频
 - 文件名称提前配置
-- 自动将 ts 文件合并成 mp4
+- 自动将 ts 切片合并成 mp4
 - **需要给视频文件标准命名以生成海报墙**（Emby, Jellyfin, Infuse, Kodi）
 
 ![架构图](./img/3.jpg)
@@ -29,40 +29,119 @@
 
 - Go
 
-## 安装&使用
+## 快速开始
 
-1. 下载适配自己系统的压缩包，解压后存放到自定义位置即可
+> 示例：使用 `youtube-dl` 解析器下载一个 MG 的视频
 
-2. 修改 config.yml
+1. 在 [发布页](https://github.com/AmbitiousJun/video-downloader-go/releases/latest) 下载好适用于自己系统的压缩包，解压得到以下文件
 
-默认情况下，转换器保持 ffmpeg 的配置不需要改变。
+   ![](assets/2025-01-07-09-25-36.png)
 
-修改解析器和下载器的配置即可
+2. 打开终端，进入主程序（start）所在的目录下，直接运行程序，自动初始化好 `ffmpeg` 和 `yt-dlp` 的执行环境
 
-3. 修改 data.txt
+   > 确保本地能够正常连通 github，否则有可能会初始化失败
 
-在这个文件中编写下载任务，每一行是一个任务，格式：`文件名｜url`，文件名不需要包含扩展名，下载默认为 `mp4`。
+   ![](assets/2025-01-07-09-32-54.png)
 
-4. 启动程序
+3. 按下键盘快捷键 `Ctrl+C` 停止程序，然后打开 `data.txt` 文件编辑下载任务如下
 
-打开终端，定位到 video-downloader-go 根目录，执行：
+   > 任务文件编辑格式如下：
+   >
+   > 1. 每行一个任务
+   > 2. 每个任务由三部分组成
+   >    - 文件名
+   >    - 分隔符（`|`）
+   >    - 视频网址
+   > 3. 确保文件名和视频网址中都不能含有分隔符，否则程序会处理错误
 
-> 在 macos / linux 环境下，可能会报错 **ffmpeg, youtube-dl 检测失败**，这是因为可执行文件没有授予可执行权限。
-> 
-> 以 ffmpeg 为例，定位到文件路径，并分配可执行权限即可：
-> 
-> ```shell
-> cd ./config/ffmpeg
-> chmod +x ./ffmpeg-macos
-> ```
+   ```
+   SHErlock.S00E42.2024.1080p.第二季 超前彩蛋第7期：女推团欢乐合宿夜|https://www.mgtv.com/b/696104/22302282.html?fpa=se&lastp=so_result
+   ```
 
-```shell
-# macos / linux
-./start
+4. 打开 `config.yml` 文件编辑下载配置
 
-# windows
-start.exe
-```
+   > 配置文件仅保留必填项以及适用于本下载示例的部分配置，更详细的配置方法请参照 [示例](https://github.com/AmbitiousJun/video-downloader-go?tab=readme-ov-file#示例)
+
+   - 解析器（decoder）配置
+
+     ```yaml
+     decoder:
+       use: youtube-dl # 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx
+       max-retry: 5 # 最大的尝试解析次数
+       youtube-dl: # youtube-dl 解析器相关配置
+         cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
+         remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
+       cat-catch: # 猫抓解析器
+         headless: 1 # 是否开启无头模式, 可选值: -1, 1
+     ```
+
+   - 下载器（downloader）配置
+
+     ```yaml
+     downloader:
+       use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
+       task-thread-count: 2 # 处理下载任务的线程个数
+       dl-thread-count: 12 # 多线程下载的线程个数
+       download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+       # download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
+       ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
+       rate-limit: 10mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
+     ```
+
+5. 完整的配置文件如下
+
+   ```yaml
+   # 解析器配置
+   #
+   # 注：在 windows 平台下使用 youtube-dl 解析器时，从 chrome, edge 等浏览器获取 cookie 有可能会失败，换成 firefox 即可
+   decoder:
+     use: youtube-dl # 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx
+     max-retry: 5 # 最大的尝试解析次数
+     youtube-dl: # youtube-dl 解析器相关配置
+       cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
+       remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
+     cat-catch: # 猫抓解析器
+       headless: 1 # 是否开启无头模式, 可选值: -1, 1
+   
+   # 下载器配置
+   downloader:
+     use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
+     task-thread-count: 2 # 处理下载任务的线程个数
+     dl-thread-count: 12 # 多线程下载的线程个数
+     download-dir: /Users/ambitious/Downloads # 视频文件下载位置
+     # download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
+     ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
+     rate-limit: 10mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
+   
+   # ts 转换器配置
+   #
+   # 对于不同的 m3u8, 有的转换器合并后的视频文件会有跳帧问题，可以尝试更换转换器
+   transfer:
+     use: ffmpeg_str_v2 # 要选用哪个转码器，可选值：ffmpeg_str, ffmpeg_txt, ffmpeg_str_v2
+     ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
+   ```
+
+6. 回到终端，运行程序，开始下载
+
+   ![](assets/2025-01-07-09-59-17.png)
+
+   程序自动调用 `yt-dlp` 解析出了 4 个视频信息（需要在 chrome 登录 vip 账号才能解析出蓝光）
+   
+   最左边的 `ID` 列即为最终需要传递给程序的 format code
+   
+   以 `960x540` 为例，需要将 format code `810` 输入到终端后回车继续下载
+   
+   ![](assets/2025-01-07-10-02-50.png)
+   
+   待解析成功后，程序就会自动下载并合并视频到指定目录下，期间会实时显示下载进度
+   
+   ![](assets/2025-01-07-10-03-58.png)
+   
+   下载成功 ✅
+   
+   ![](assets/2025-01-07-10-04-46.png)
+
+   ![](assets/2025-01-07-10-06-05.png)
 
 ## 示例
 
@@ -231,19 +310,28 @@ decoder:
 ```yml
 # 针对不同的域名进行定制化配置
 # 
-# 目前只支持针对 decoder 进行定制化配置
+# 针对 decoder 进行定制化配置
 # 可配置的属性：use, resource-type, youtube-dl.cookies-from, youtube-dl.format-codes, youtube-dl.remember-format
+#
+# 针对 transfer 进行定制化配置
+# 可配置的属性：use
 customs:
   - decoder: 
       use: youtube-dl
       youtube-dl:
-        cookies-from: firefox
+        cookies-from: chrome
         format-codes:
         remember-format: 1
     hosts: # 对哪些域名生效，必须配置完整，有端口也要加上
       - www.mgtv.com
       - www.youtube.com
       - www.bilibili.com
+  - decoder:
+      use: none
+    hosts:
+      - apd-vlive.apdcdn.tc.qq.com
+      - pcvideoaliyun.titan.mgtv.com
+      - pcvideotx.titan.mgtv.com
 ```
 
 > 注：目前仅支持对解析器进行定制化配置
