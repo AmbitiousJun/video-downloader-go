@@ -23,7 +23,7 @@ type MyTokenBucket struct {
 }
 
 const (
-	MaxConsumeTokens = 512 * 1024 // 每次最多消耗掉的令牌
+	MinConsumeTokens = 1024 // 最少消耗的令牌数
 )
 
 // 创建一个令牌桶对象
@@ -59,10 +59,15 @@ func (tb *MyTokenBucket) CompleteConsume(consume int64) {
 func (tb *MyTokenBucket) TryConsume(request int64) int64 {
 	tb.tokensMutex.Lock()
 	defer tb.tokensMutex.Unlock()
+
 	// 1 补充令牌
 	tb.refillTokens()
+	if tb.tokens < MinConsumeTokens {
+		return 0
+	}
+
 	// 2 计算出当前能够消耗的令牌数
-	consume := mymath.Min(MaxConsumeTokens, mymath.Min(tb.tokens, request))
+	consume := mymath.Min(tb.tokens, request)
 	tb.tokens -= consume
 	return consume
 }
@@ -113,7 +118,7 @@ func (tb *MyTokenBucket) autoCalcRateLimit() {
 	go func() {
 		for {
 			doCalc()
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second)
 		}
 	}()
 }

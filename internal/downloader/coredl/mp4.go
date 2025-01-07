@@ -96,7 +96,7 @@ func downloadMp4(dmt *meta.Download, handlerFunc ProgressHandler, multiThread bo
 		}
 		newReq.Header.Set(myhttp.HttpHeaderRangesKey, fmt.Sprintf("bytes=%d-%d", task.from, task.to))
 		var dn int64
-		if dn, tmpErr = myhttp.DownloadWithRateLimit(newReq, dmt.FileName); tmpErr != nil {
+		if dn, tmpErr = myhttp.DownloadWithRateLimitV2(newReq, dmt.FileName); tmpErr != nil {
 			tmpErr = errors.Wrapf(tmpErr, "下载分片时出现异常：%v, %v", dmt, task)
 			return
 		}
