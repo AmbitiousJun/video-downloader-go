@@ -9,6 +9,7 @@ import (
 
 var retryableErrors = []error{
 	NetworkError,
+	ConnectionResetError,
 }
 
 // 判断是否是可重试异常

@@ -1,6 +1,7 @@
 package myhttp
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"sync"
 	"time"
 	"video-downloader-go/internal/util"
+	"video-downloader-go/internal/util/mylog"
 	"video-downloader-go/internal/util/mytokenbucket"
 
 	"github.com/pkg/errors"
@@ -24,8 +26,9 @@ const (
 )
 
 const (
-	HttpHeaderRangesPattern = "bytes=(\\d*)-(\\d*)" // 用于匹配出 Http 请求头中的 Ranges 的值
-	HttpHeaderRangesKey     = "Range"               // Range 请求头 key
+	HttpHeaderRangesPattern     = "bytes=(\\d*)-(\\d*)"  // 用于匹配出 Http 请求头中的 Ranges 的值
+	HttpRespHeaderRangesPattern = "bytes (\\d*)-(\\d*)/" // 用于匹配出 Http 响应头中的 Ranges 值
+	HttpHeaderRangesKey         = "Range"                // Range 请求头 key
 )
 
 const (
@@ -66,6 +69,110 @@ var TimeoutHttpClient = (func() func() *http.Client {
 		return client
 	}
 })()
+
+// 下载一个网络资源到本地的文件上，并进行网络限速
+// @param request 构造好的请求对象
+// @param destPath 要下载到本地文件的绝对路径
+// @return 下载成功时，返回下载的字节数，下载失败则返回错误
+func DownloadWithRateLimitV2(request *http.Request, destPath string) (int64, error) {
+	if request == nil {
+		return 0, errors.New("request 对象不能为空")
+	}
+
+	// 打开目标文件
+	destFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
+	if err != nil {
+		if util.IsRetryableError(err) {
+			util.PrintRetryError("打开文件 ["+destPath+"] 失败", err, 1)
+			return DownloadWithRateLimitV2(request, destPath)
+		}
+		return 0, fmt.Errorf("打开文件 [%s] 失败: %v", destPath, err)
+	}
+	defer destFile.Close()
+
+	// 发起请求获取响应
+	client := TimeoutHttpClient()
+	resp, err := client.Do(request)
+	if err != nil {
+		if util.IsRetryableError(err) {
+			util.PrintRetryError("发送请求失败", err, 2)
+			return DownloadWithRateLimitV2(request, destPath)
+		}
+		return 0, fmt.Errorf("发送请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 非成功响应
+	if !Is2xxSuccess(resp.StatusCode) {
+		if resp.StatusCode == 416 {
+			return 0, errors.New("检测到 416 错误码")
+		}
+		util.PrintRetryError(fmt.Sprintf("错误码：%v", resp.StatusCode), err, 2)
+		return DownloadWithRateLimitV2(request, destPath)
+	}
+
+	// 从 Content-Range 响应头中读取出起始字节
+	var offset int64
+	contentRange := resp.Header.Get("Content-Range")
+	reg := regexp.MustCompile(HttpRespHeaderRangesPattern)
+	if reg.MatchString(contentRange) {
+		start := reg.FindStringSubmatch(contentRange)[1]
+		startNum, err := strconv.Atoi(start)
+		if err != nil {
+			mylog.Warnf("非预期的 start 字节, 原始值: %s", contentRange)
+		} else {
+			offset = int64(startNum)
+		}
+	}
+
+	// 通过缓冲区分片读取响应
+	maxBufSize := 4096
+	reader := bufio.NewReader(resp.Body)
+
+	// 不断获取令牌, 将响应的数据写入文件中
+	bucket := mytokenbucket.GlobalBucket
+	var n int
+	var totalBytes int64
+	for {
+		bufSize := bucket.TryConsume(int64(maxBufSize))
+		if bufSize <= 0 {
+			time.Sleep(time.Millisecond * 100)
+			continue
+		}
+		buf := make([]byte, bufSize)
+
+		// 不断重试读取响应
+		n, err = reader.Read(buf)
+		for err != nil && err != io.EOF {
+			mylog.Warnf("下载异常: %v, 稍后重试...", err)
+			time.Sleep(time.Millisecond * 100)
+			n, err = reader.Read(buf)
+		}
+		eof := err == io.EOF
+
+		// 将读取到的字节写入到文件中
+		if n > 0 {
+			for {
+				_, err := destFile.WriteAt(buf[:n], offset+totalBytes)
+				if err != nil {
+					mylog.Warnf("写入文件异常: %v, 1s 后重试...", err)
+					time.Sleep(time.Second)
+					continue
+				}
+				break
+			}
+			totalBytes += int64(n)
+			bucket.CompleteConsume(int64(n))
+		}
+
+		// 如果已经读取到文件末尾, 停止读取
+		if eof {
+			break
+		}
+	}
+
+	return totalBytes, nil
+}
 
 // 下载一个网络资源到本地的文件上，并进行网络限速
 // @param request 构造好的请求对象

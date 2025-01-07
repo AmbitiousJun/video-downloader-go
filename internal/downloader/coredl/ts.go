@@ -90,7 +90,7 @@ func (th *TsHandler) downloadAndMergeHead() (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	headDn, err := myhttp.DownloadWithRateLimit(req, filepath.Join(dlDir, th.tmpHeadName))
+	headDn, err := myhttp.DownloadWithRateLimitV2(req, filepath.Join(dlDir, th.tmpHeadName))
 	if err != nil {
 		return -1, errors.Wrapf(err, "分片下载异常: %v", th.DlPath)
 	}
@@ -100,7 +100,7 @@ func (th *TsHandler) downloadAndMergeHead() (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	bodyDn, err := myhttp.DownloadWithRateLimit(req, filepath.Join(dlDir, th.tmpBodyName))
+	bodyDn, err := myhttp.DownloadWithRateLimitV2(req, filepath.Join(dlDir, th.tmpBodyName))
 	if err != nil {
 		return -1, errors.Wrapf(err, "分片下载异常: %v", th.DlPath)
 	}
@@ -126,7 +126,7 @@ func (th *TsHandler) downloadHeadless() (int64, error) {
 	}
 
 	var dn int64
-	if dn, err = myhttp.DownloadWithRateLimit(req, th.DlPath); err != nil {
+	if dn, err = myhttp.DownloadWithRateLimitV2(req, th.DlPath); err != nil {
 		return -1, errors.Wrapf(err, "分片下载异常：%v", th.DlPath)
 	}
 
