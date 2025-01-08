@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 	"video-downloader-go/internal/config"
+	"video-downloader-go/internal/downloader"
 	"video-downloader-go/internal/meta"
 	"video-downloader-go/internal/util/mylog"
 )
@@ -25,7 +26,7 @@ type DownloadMetaBuilder func([]string, *meta.Video) *meta.Download
 func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSuccessHandler) {
 	mylog.Info("开始监听解析列表")
 	go func() {
-		ticker := NewGrowableTicker(10, 3*60, 0.17)
+		ticker := NewGrowableTicker(30, 5*60, 0.17)
 	out:
 		for {
 			// 没有任务处理时, 每阻塞 2 秒检查一次任务列表
@@ -62,9 +63,17 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 					vmt.LogBar.WaitingHint("解析完成, 等待下载")
 					dmt.LogBar = vmt.LogBar
 					decodeSuccess(dmt)
+
 					// 通常情况下, 解析任务处理速率远高于下载任务
 					// 所以这里阻塞一段较长的时间, 避免解析过快
-					time.Sleep(time.Second * ticker.Next())
+					if len(downloader.CanDownloadChan) != 0 {
+						<-downloader.CanDownloadChan
+					}
+					select {
+					case <-sleep2Channel(time.Second * ticker.Next()):
+					case <-downloader.CanDownloadChan:
+					}
+
 					continue out
 				}
 				currentTry++
@@ -98,4 +107,17 @@ func decode2Dmt(dcd D, vmt *meta.Video, dmtBuilder DownloadMetaBuilder) (*meta.D
 	}
 	mylog.Successf("解析成功, 已添加到下载列表, 文件名：%s, 下载地址：%s", vmt.Name, links)
 	return dmtBuilder(links, vmt), nil
+}
+
+// sleep2Channel 将线程睡眠转换成通道读取形式
+func sleep2Channel(duration time.Duration) <-chan struct{} {
+	ch := make(chan struct{}, 1)
+
+	go func() {
+		time.Sleep(duration)
+		ch <- struct{}{}
+		close(ch)
+	}()
+
+	return ch
 }

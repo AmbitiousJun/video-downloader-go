@@ -31,6 +31,9 @@ type CompleteOne func()
 // 任务下载失败的监听器，下载器会将失败的任务传递出来
 type DlErrorHandler func(dmt *meta.Download)
 
+// CanDownloadChan 当下载器成功下载一个任务时, 就往该通道中写入信号, 通知解析器及时解析
+var CanDownloadChan = make(chan struct{}, 1)
+
 // ListenAndDownload 用于命令行模式下监听下载任务并依据全局配置多协程下载任务
 func ListenAndDownload(list *meta.TaskDeque[meta.Download], completeOne CompleteOne, dlErrorHandler DlErrorHandler) {
 	mylog.Info("开始监听下载列表...")
@@ -94,6 +97,10 @@ func handleTask(dmt *meta.Download, completeOne CompleteOne, dlErrorHandler DlEr
 		if err == nil {
 			completeOne()
 			dmt.LogBar.OkHint("下载完成")
+			select {
+			case CanDownloadChan <- struct{}{}:
+			default:
+			}
 			return
 		}
 
