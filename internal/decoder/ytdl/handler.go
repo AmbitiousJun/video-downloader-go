@@ -26,7 +26,7 @@ func NewHandler(url string, formatCode *config.YtDlFormatCode) *Handler {
 	}
 
 	ccf := config.G.Decoder.YoutubeDL.CustomCookiesFrom(url)
-	if ccf != "" {
+	if ccf != "" && ccf != config.YoutubeDlCookieNone {
 		commands = append(commands, "--cookies-from-browser", ccf)
 	}
 
