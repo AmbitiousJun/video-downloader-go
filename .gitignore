@@ -3,3 +3,4 @@ dist
 config/ffmpeg
 config/yt-dlp
 config/data.txt
+**/.DS_Store
