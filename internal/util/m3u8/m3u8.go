@@ -211,7 +211,7 @@ func Merge(tsDirPath string, dmt *meta.Download) error {
 	dirName := filepath.Base(tsDirPath)
 	fileName := dirName[:len(dirName)-len(config.G.Downloader.TsDirSuffix)-1]
 	mylog.Infof("准备将 ts 文件合并成 mp4 文件，目标视频：%s", fileName)
-	err := transfer.Instance(dmt.OriginUrl).Ts2Mp4(tsDirPath, filepath.Dir(tsDirPath)+"/"+fileName, dmt.LogBar)
+	err := transfer.Instance(dmt.OriginUrl).Ts2Mp4(tsDirPath, filepath.Join(filepath.Dir(tsDirPath), fileName), dmt.LogBar)
 	if err != nil {
 		return errors.Wrap(err, "合并失败")
 	}
