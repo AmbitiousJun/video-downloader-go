@@ -232,7 +232,7 @@ func (cs *CodeSelector) ExecuteProcess() error {
 	}
 
 	ccf := config.G.Decoder.YoutubeDL.CustomCookiesFrom(cs.Url)
-	if ccf != "" {
+	if ccf != "" && ccf != config.YoutubeDlCookieNone {
 		commands = append(commands, "--cookies-from-browser", ccf)
 	}
 
@@ -241,7 +241,7 @@ func (cs *CodeSelector) ExecuteProcess() error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, "执行命令失败")
+		return fmt.Errorf("执行命令失败: %v, cmd: [%s %s]", err, config.YoutubeDlPath, strings.Join(commands, " "))
 	}
 
 	cs.PrintFormatCodes(mystring.UTF8(string(output)))
