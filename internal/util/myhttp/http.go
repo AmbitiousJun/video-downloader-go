@@ -144,8 +144,12 @@ func DownloadWithRateLimitV2(request *http.Request, destPath string) (int64, err
 		// 不断重试读取响应
 		n, err = reader.Read(buf)
 		for err != nil && err != io.EOF {
+			if err == io.ErrUnexpectedEOF {
+				return 0, fmt.Errorf("读取数据异常: %v", err)
+			}
+
 			mylog.Warnf("下载异常: %v, 稍后重试...", err)
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 500)
 			n, err = reader.Read(buf)
 		}
 		eof := err == io.EOF
