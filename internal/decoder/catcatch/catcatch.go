@@ -12,7 +12,6 @@ import (
 	"video-downloader-go/internal/util/mylog"
 
 	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/pkg/errors"
 )
@@ -154,13 +153,15 @@ func NewCatCather() (*CatCatcher, error) {
 	defer func() { cc.cancelFuncs = append(cc.cancelFuncs, c) }()
 	browserCtx, cancel := chromedp.NewContext(allocator)
 	defer func() { cc.cancelFuncs = append(cc.cancelFuncs, cancel) }()
+	timeoutCtx, tc := context.WithTimeout(browserCtx, time.Minute*2)
+	defer func() { cc.cancelFuncs = append(cc.cancelFuncs, tc) }()
 
 	// 运行一遍, 没报错才能进行后续解析任务
 	if err := chromedp.Run(browserCtx); err != nil {
 		return nil, err
 	}
 
-	cc.browserCtx = browserCtx
+	cc.browserCtx = timeoutCtx
 	return &cc, nil
 }
 
@@ -191,7 +192,7 @@ type CatCatchResult struct {
 }
 
 // Catch 注入猫抓脚本后将抓取到的资源收集为 JSON 格式并返回
-func (cc *CatCatcher) Catch() ([]*CatCatchResult, error) {
+func (cc *CatCatcher) Catch() ([]CatCatchResult, error) {
 	// 加载猫抓脚本
 	catchScript, err := loadCatCatchScript()
 	if err != nil {
@@ -202,18 +203,12 @@ func (cc *CatCatcher) Catch() ([]*CatCatchResult, error) {
 	var catchResult string
 	err = cc.Run(
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			var inject func()
-			inject = func() {
-				time.Sleep(time.Millisecond * 50)
-				_, errDts, err := runtime.Evaluate(catchScript).Do(ctx)
-				if errDts != nil || err != nil {
-					mylog.Warnf("猫抓脚本注入失败, errDts: %v, err: %v, 正在重试...", errDts, err)
-					inject()
-					return
-				}
-				mylog.Success("猫抓脚本已成功注入")
+			_, err := page.AddScriptToEvaluateOnNewDocument(catchScript).Do(ctx)
+			if err != nil {
+				mylog.Errorf("猫抓脚本注入失败, err: %v", err)
+				return err
 			}
-			go inject()
+			mylog.Success("猫抓脚本已成功注入, 阻塞 15 秒等待抓取完成")
 			return nil
 		}),
 		// 重新加载当前页面, 使得猫抓脚本生效
@@ -228,7 +223,7 @@ func (cc *CatCatcher) Catch() ([]*CatCatchResult, error) {
 	}
 
 	// 封装数据
-	datas := []*CatCatchResult{}
+	datas := []CatCatchResult{}
 	if err = json.Unmarshal([]byte(catchResult), &datas); err != nil {
 		return nil, errors.Wrap(err, "无法正常抓取数据: JSON 转换异常")
 	}
@@ -239,7 +234,7 @@ func (cc *CatCatcher) Catch() ([]*CatCatchResult, error) {
 // PrintResult 将猫抓结果打印到控制台上
 //
 // 这个函数只负责格式化, 调用方必须要提供一个处理函数, 来对每一行数据进行操作
-func PrintResult(results []*CatCatchResult, lineHandler func(line string)) {
+func PrintResult(results []CatCatchResult, lineHandler func(line string)) {
 	// 第一行属性名
 	lineHandler("         RequestId|  Ext|                              Url|            Action|              Href")
 	// 第二行分隔符

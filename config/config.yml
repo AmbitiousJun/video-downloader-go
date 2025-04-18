@@ -2,7 +2,7 @@
 #
 # 注：在 windows 平台下使用 youtube-dl 解析器时，从 chrome, edge 等浏览器获取 cookie 有可能会失败，换成 firefox 即可
 decoder:
-  use: none # 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx
+  use: cat-catch:tx # 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx
   max-retry: 5 # 最大的尝试解析次数
   youtube-dl: # youtube-dl 解析器相关配置
     cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
@@ -12,8 +12,8 @@ decoder:
     headless: 1 # 是否开启无头模式, 可选值: -1, 1
     sites: # 针对不同的网站分别实现猫抓解析器
       tx:
-        cookie-json-path: /Users/ambitious/Desktop/学习/Go/projects/video-downloader-go/cookie-files/tx.json # Cookie 文件绝对路径
-        video-format: uhd # 视频格式, 可选值: sd, hd, shd, fhd, uhd, hdr10
+        cookie-json-path: cookie-files/tx.json # Cookie 文件绝对路径
+        video-format: fhd # 视频格式, 可选值: sd, hd, shd, fhd, uhd, hdr10
 
 # 下载器配置
 downloader:

@@ -17,6 +17,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+// format2Payload 视频格式转换成分辨率标签
+var format2Payload = map[string]string{
+	"hd":    "480P",
+	"shd":   "720p",
+	"fhd":   "1080P",
+	"uhd":   "4K",
+	"hdr10": "臻彩1080P",
+}
+
 // 适配腾讯视频的猫抓解析器, id => cat-catch:tx
 // 实现解析器接口
 type TxDecoder struct {
@@ -29,6 +38,10 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 	videoFormat := config.G.Decoder.CatCatch.Sites.Tx.VideoFormat
 	if videoFormat == "" {
 		return nil, errors.New("未配置要解析的清晰度")
+	}
+	formatPayload, ok := format2Payload[videoFormat]
+	if !ok {
+		return nil, fmt.Errorf("错误的清晰度配置: %s", videoFormat)
 	}
 
 	cc, err := NewCatCather()
@@ -80,20 +93,19 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 		chromedp.Nodes(".quick_user_avatar", &nodes, chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			if len(nodes) == 0 {
-				mylog.Warn("获取不到用户头像")
-				return nil
+				return errors.New("识别不到用户头像")
 			}
 			src := nodes[0].AttributeValue("src")
 			if strings.Contains(src, "common_avatar") {
-				mylog.Warn("识别不到用户登录状态")
-			} else {
-				mylog.Successf("成功识别用户登录状态, 头像 url: %s", src)
+				return errors.New("恢复登录态失败")
 			}
+			mylog.Successf("成功识别用户登录状态, 头像 url: %s", src)
 			return nil
 		}),
 
 		// 注入 JS 脚本, 弹出清晰度选择框
 		td.ShowPlayerCover(),
+		chromedp.Sleep(time.Second*2),
 
 		// 点击用户指定的清晰度按钮
 		chromedp.Click(fmt.Sprintf("[data-value=%s]", videoFormat), chromedp.ByQuery),
@@ -111,8 +123,10 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 		chromedp.Text(".txp_btn_definition .txp_label", &text, chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			if text == "" {
-				mylog.Warn("获取不到当前的清晰度")
-				return nil
+				return errors.New("获取不到视频清晰度")
+			}
+			if text != formatPayload {
+				return fmt.Errorf("获取到的清晰度 [%s] 与预期 [%s] 不一致", text, formatPayload)
 			}
 			mylog.Successf("成功获取到清晰度: %s", text)
 			return nil
@@ -130,6 +144,11 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 	}
 	if len(results) == 0 {
 		return nil, errors.New("解析不到任何资源")
+	}
+
+	// 系统自动检查结果中是否有默认的 m3u8 链接地址, 有则无需用户手动选择
+	if dlUrl, ok := td.ChooseDefaultResult(results); ok {
+		return []string{dlUrl}, nil
 	}
 
 	// 阻塞系统日志, 调用选择器, 让用户选择要使用抓取到的哪个资源
@@ -182,4 +201,15 @@ func (td *TxDecoder) ReadCookiesFromConfig() []*UserCookie {
 	}
 
 	return res
+}
+
+// ChooseDefaultResult 选中默认的 m3u8 地址
+func (td *TxDecoder) ChooseDefaultResult(results []CatCatchResult) (string, bool) {
+	dftHost := "apd-vlive.apdcdn.tc.qq.com"
+	for _, res := range results {
+		if strings.Contains(res.Url, dftHost) {
+			return res.Url, true
+		}
+	}
+	return "", false
 }
