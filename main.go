@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const CurrentVersion = "1.8.5"
+const CurrentVersion = "1.8.6"
 
 func main() {
 	defer appctx.WaitGroup().Wait()
