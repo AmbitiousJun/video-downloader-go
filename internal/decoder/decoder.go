@@ -76,6 +76,9 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 
 					continue out
 				}
+
+				mylog.Warnf("尝试解析失败 (%d/%d): %v", currentTry, maxRetry, decodeErr)
+				time.Sleep(time.Second)
 				currentTry++
 			}
 			vmt.LogBar.ErrorHint("解析失败")
