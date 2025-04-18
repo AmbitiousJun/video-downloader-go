@@ -11,7 +11,7 @@ import (
 	"video-downloader-go/internal/util/mylog"
 )
 
-func genResults() []*catcatch.CatCatchResult {
+func genResults() []catcatch.CatCatchResult {
 	src := `
 	[
 		{
@@ -44,7 +44,7 @@ func genResults() []*catcatch.CatCatchResult {
 		}
 	]
 	`
-	results := []*catcatch.CatCatchResult{}
+	results := []catcatch.CatCatchResult{}
 	json.Unmarshal([]byte(src), &results)
 	return results
 }

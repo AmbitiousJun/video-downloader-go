@@ -18,11 +18,11 @@ const (
 
 // ResultSelector 是一个负责与用户在控制台进行交互的解析结果选择器
 type ResultSelector struct {
-	results []*CatCatchResult
+	results []CatCatchResult
 }
 
 // NewResultSelector 初始化一个猫抓解析结果选择器
-func NewResultSelector(results []*CatCatchResult) *ResultSelector {
+func NewResultSelector(results []CatCatchResult) *ResultSelector {
 	return &ResultSelector{
 		results: results,
 	}
