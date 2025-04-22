@@ -83,11 +83,8 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 			return nil
 		}),
 		chromedp.Reload(),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			mylog.Info("等待页面加载完成, 阻塞 10 秒")
-			time.Sleep(time.Second * 10)
-			return nil
-		}),
+		chromedp.WaitVisible(".quick_user_avatar", chromedp.ByQuery),
+		chromedp.Sleep(time.Millisecond*100),
 
 		// 通过检查用户头像判断用户是否登录
 		chromedp.Nodes(".quick_user_avatar", &nodes, chromedp.ByQuery),
@@ -113,10 +110,10 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 		// 等待清晰度切换
 		chromedp.Reload(),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			mylog.Info("等待清晰度切换完成, 阻塞 15 秒")
-			time.Sleep(time.Second * 15)
+			mylog.Info("等待页面加载完成...")
 			return nil
 		}),
+		chromedp.WaitVisible("[data-status=pause]", chromedp.ByQuery),
 
 		// 获取当前的清晰度
 		td.ShowPlayerCover(),
