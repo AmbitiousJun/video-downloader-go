@@ -1,6 +1,15 @@
-# video-downloader-go
+<h1 align="center">video-downloader-go</h1>
 
-这是 [video-downloader](https://github.com/AmbitiousJun/video-downloader) 的 Go 实现版本
+<div align="center">
+  <a href="https://github.com/AmbitiousJun/video-downloader-go/tree/v1.8.7"><img src="https://img.shields.io/github/v/tag/AmbitiousJun/video-downloader-go"></img></a>
+  <a href="https://goreportcard.com/report/github.com/AmbitiousJun/video-downloader-go"><img src="https://goreportcard.com/badge/github.com/AmbitiousJun/video-downloader-go"></img></a>
+  <a href="https://github.com/AmbitiousJun/video-downloader-go/releases/latest"><img src="https://img.shields.io/github/downloads/AmbitiousJun/video-downloader-go/total"></img></a>
+  <img src="https://img.shields.io/github/license/AmbitiousJun/video-downloader-go"></img>
+</div>
+
+<div align="center">
+  “爱优腾芒” 视频批量解析下载器，适配 macos / windows / linux
+</div>
 
 ## 特点
 
