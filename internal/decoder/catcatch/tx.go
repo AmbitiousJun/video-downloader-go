@@ -135,7 +135,9 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 
 	// 注入猫抓脚本, 获取解析结果
 	mylog.Info("注入猫抓脚本, 获取资源...")
-	results, err := cc.Catch()
+	results, err := cc.Catch(
+		chromedp.WaitVisible("[data-status=pause]", chromedp.ByQuery),
+	)
 	if err != nil {
 		return nil, err
 	}

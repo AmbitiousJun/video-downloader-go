@@ -192,32 +192,40 @@ type CatCatchResult struct {
 }
 
 // Catch 注入猫抓脚本后将抓取到的资源收集为 JSON 格式并返回
-func (cc *CatCatcher) Catch() ([]CatCatchResult, error) {
+//
+// 可传入多个用于判断资源收集结束的 action, 没有传递则默认阻塞 15 秒后返回现有结果
+func (cc *CatCatcher) Catch(waitActions ...chromedp.Action) ([]CatCatchResult, error) {
 	// 加载猫抓脚本
 	catchScript, err := loadCatCatchScript()
 	if err != nil {
 		return nil, errors.Wrap(err, "加载猫抓脚本失败")
 	}
 
-	// 存放猫抓结果 (JSON)
-	var catchResult string
-	err = cc.Run(
+	actions := []chromedp.Action{
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			_, err := page.AddScriptToEvaluateOnNewDocument(catchScript).Do(ctx)
 			if err != nil {
 				mylog.Errorf("猫抓脚本注入失败, err: %v", err)
 				return err
 			}
-			mylog.Success("猫抓脚本已成功注入, 阻塞 15 秒等待抓取完成")
+			mylog.Success("猫抓脚本注入成功")
 			return nil
 		}),
 		// 重新加载当前页面, 使得猫抓脚本生效
 		chromedp.Reload(),
-		// 等待 15 秒, 收集资源
-		chromedp.Sleep(time.Second*15),
-		// 获取抓取结果
-		chromedp.Text("#cat-catch-result", &catchResult, chromedp.ByQuery),
-	)
+	}
+
+	// 没有传参，使用默认的阻塞 action
+	if len(waitActions) == 0 {
+		waitActions = append(waitActions, chromedp.Sleep(time.Second*15))
+	}
+	actions = append(actions, waitActions...)
+
+	// 获取抓取结果 (JSON)
+	var catchResult string
+	actions = append(actions, chromedp.Text("#cat-catch-result", &catchResult, chromedp.ByQuery))
+
+	err = cc.Run(actions...)
 	if err != nil {
 		return nil, errors.Wrap(err, "执行自动化脚本异常")
 	}
