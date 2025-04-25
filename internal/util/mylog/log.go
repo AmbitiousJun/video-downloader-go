@@ -6,12 +6,10 @@ import (
 	"video-downloader-go/internal/appctx"
 	"video-downloader-go/internal/util/mylog/color"
 	"video-downloader-go/internal/util/mytokenbucket"
-
-	"github.com/mattn/go-runewidth"
 )
 
 const (
-	PanelMaxLogs         = 5           // 面板中最大的日志条数
+	PanelMaxLogs         = 15          // 面板中最大的日志条数
 	PanelRefreshInterval = time.Second // 日志面板刷新间隔
 )
 
@@ -78,7 +76,7 @@ func Infof(format string, args ...any) {
 
 // Info 插入一条 Info 日志
 func Info(l string) {
-	GlobalPanel.AppendLog(color.ToBlue(cutLog(l)))
+	GlobalPanel.AppendLog(l, color.ToBlue)
 }
 
 // Errorf 格式化插入一条 Error 日志
@@ -88,7 +86,7 @@ func Errorf(format string, args ...any) {
 
 // Error 插入一条 Error 日志
 func Error(l string) {
-	GlobalPanel.AppendLog(color.ToRed(cutLog(l)))
+	GlobalPanel.AppendLog(l, color.ToRed)
 }
 
 // Warnf 格式化插入一条 Warnf 日志
@@ -98,7 +96,7 @@ func Warnf(format string, args ...any) {
 
 // Warn 插入一条 Warn 日志
 func Warn(l string) {
-	GlobalPanel.AppendLog(color.ToYellow(cutLog(l)))
+	GlobalPanel.AppendLog(l, color.ToYellow)
 }
 
 // Successf 格式化插入一条 Successf 日志
@@ -108,23 +106,5 @@ func Successf(format string, args ...any) {
 
 // Success 插入一条 Success 日志
 func Success(l string) {
-	GlobalPanel.AppendLog(color.ToGreen(cutLog(l)))
-}
-
-// cutLog 判断一条日志的长度如果超出一行, 就进行截断
-func cutLog(l string) string {
-	width, _ := GlobalPanel.GetTerminalSize()
-	lWidth := runewidth.StringWidth(l)
-	percent := 0.5
-
-	// 1 l 长度合法, 无需额外的判断
-	if float64(lWidth) <= float64(width)*percent {
-		return l
-	}
-
-	// 2 对字符串进行截断
-	lRunes := []rune(l)
-	runeWidth := float64(len(lRunes)) / float64(lWidth) * float64(width)
-	cutRuneLen := int(runeWidth * percent)
-	return string(lRunes[:cutRuneLen]) + "..."
+	GlobalPanel.AppendLog(l, color.ToGreen)
 }

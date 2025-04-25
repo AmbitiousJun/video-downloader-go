@@ -56,13 +56,15 @@ func NewPanel(dlSpeedGetter func() string, maxLogNum int) *Panel {
 		canRegister: true,
 	}
 	for i := 1; i <= p.maxLogNum; i++ {
-		p.logs = append(p.logs, "")
+		p.logs = append(p.logs, "○ ")
 	}
 	return p
 }
 
 // PreventRegister 阻止注册新的 bar 到面板中
 func (p *Panel) PreventRegister() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.canRegister = false
 	p.CalcTotalLine()
 }
@@ -89,9 +91,7 @@ func (p *Panel) PrintLogPanel(canClear bool) {
 	allLogs = append(allLogs, color.ToYellow("Speed: "+p.dlSpeed()))
 	allLogs = append(allLogs, color.ToPurple("Download ↑ "+strings.Repeat("=", width)))
 	allLogs = append(allLogs, color.ToPurple("Log      ↓ "+strings.Repeat("=", width)))
-	for _, l := range p.logs {
-		allLogs = append(allLogs, fmt.Sprintf("○ %s", l))
-	}
+	allLogs = append(allLogs, p.logs...)
 	allLogs = append(allLogs, color.ToPurple("Log      ↑ "+strings.Repeat("=", width)))
 
 	// 2 清空旧日志
@@ -201,12 +201,52 @@ func (p *Panel) CollectBarLogs(callback func(s string)) {
 // AppendLog 追加日志到面板中
 //
 // 自动截断面板的过时日志
-func (p *Panel) AppendLog(l string) {
+func (p *Panel) AppendLog(l string, colorFunc func(string) string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.logs = append(p.logs, l)
-	overflowNum := len(p.logs) - p.maxLogNum
-	if overflowNum > 0 {
-		p.logs = p.logs[overflowNum:]
+
+	// 截断过时日志
+	defer func() {
+		overflowNum := len(p.logs) - p.maxLogNum
+		if overflowNum > 0 {
+			p.logs = p.logs[overflowNum:]
+		}
+	}()
+
+	width, _ := p.GetTerminalSize()
+	lWidth := runewidth.StringWidth(l)
+	percent := 0.8
+
+	// l 长度合法, 无需进行截断
+	maxWidthPerLine := int(float64(width) * percent)
+	if lWidth <= maxWidthPerLine {
+		p.logs = append(p.logs, "○ "+colorFunc(l))
+		return
 	}
+
+	// 长度不合法, 进行截断
+	currentWidth := 0
+	firstLine := true
+	lines := []string{}
+	result := []rune{}
+	for _, r := range l {
+		charWidth := runewidth.RuneWidth(r)
+		if currentWidth+charWidth > maxWidthPerLine {
+			prefix := ""
+			if firstLine {
+				prefix = "○ "
+				firstLine = false
+			}
+			lines = append(lines, prefix+colorFunc(string(result)))
+			result = []rune{}
+			currentWidth = 0
+		}
+		result = append(result, r)
+		currentWidth += charWidth
+	}
+	if len(result) > 0 {
+		lines = append(lines, colorFunc(string(result)))
+	}
+
+	p.logs = append(p.logs, lines...)
 }
