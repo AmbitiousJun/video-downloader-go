@@ -29,6 +29,7 @@ const (
 var ValidM3U8ContentTypes = map[string]struct{}{
 	"application/vnd.apple.mpegurl": {},
 	"application/x-mpegurl":         {},
+	"application/x-mpeg":            {},
 }
 
 // 检查一个 url 是否是 m3u8 地址
