@@ -188,33 +188,6 @@ func (cs *CodeSelector) UseRememberFormat() (*config.YtDlFormatCode, bool) {
 		codeNum++
 	}
 
-	// out:
-	// 	for _, formatLine := range cs.formatLines {
-	// 		fls := strings.SplitN(formatLine, " ", 2)
-	// 		for idx, choice := range userChoices {
-	// 			// 当前的 choice 已成功匹配
-	// 			if vis[idx] {
-	// 				continue
-	// 			}
-
-	// 			// 格式不匹配并且 code 也不匹配
-	// 			if choice.code != fls[0] && choice.format != fls[1] {
-	// 				continue
-	// 			}
-
-	// 			// 除了第 1 个 code 之外，其他的 code 之前需要拼接 +
-	// 			if codeBuilder.Len() > 0 {
-	// 				codeBuilder.WriteString("+")
-	// 			}
-	// 			codeBuilder.WriteString(fls[0])
-
-	// 			// 计数，状态维护
-	// 			codeNum++
-	// 			vis[idx] = true
-	// 			continue out
-	// 		}
-	// 	}
-
 	// 匹配个数和用户选择的数量不一致
 	if codeNum != len(userChoices) {
 		return nil, false
