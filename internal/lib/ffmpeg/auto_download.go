@@ -15,7 +15,7 @@ import (
 const (
 
 	// ReleasePage ffmpeg 发布页地址
-	ReleasePage = "https://github.com/AmbitiousJun/ffmpeg-release/releases/latest/download"
+	ReleasePage = "https://github.tbedu.top/https://github.com/AmbitiousJun/ffmpeg-release/releases/latest/download"
 )
 
 // arch2ExecNameMap 根据系统的芯片架构, 映射到对应的二进制文件

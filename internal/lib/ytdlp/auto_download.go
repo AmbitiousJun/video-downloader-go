@@ -15,7 +15,7 @@ import (
 const (
 
 	// ReleasePage yt-dlp 发布页地址
-	ReleasePage = "https://github.com/yt-dlp/yt-dlp/releases/latest/download"
+	ReleasePage = "https://github.tbedu.top/https://github.com/yt-dlp/yt-dlp/releases/latest/download"
 )
 
 // arch2ExecNameMap 根据系统的芯片架构, 映射到对应的二进制文件

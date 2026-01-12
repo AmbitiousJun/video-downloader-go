@@ -153,33 +153,67 @@ func (cs *CodeSelector) UseRememberFormat() (*config.YtDlFormatCode, bool) {
 
 	// 构造 format code
 	codeBuilder, codeNum := new(strings.Builder), 0
-	vis := make([]bool, len(userChoices))
-out:
-	for _, formatLine := range cs.formatLines {
-		fls := strings.SplitN(formatLine, " ", 2)
-		for idx, choice := range userChoices {
-			// 当前的 choice 已成功匹配
-			if vis[idx] {
-				continue
-			}
 
-			// 格式不匹配并且 code 也不匹配
-			if choice.code != fls[0] && choice.format != fls[1] {
-				continue
+	for _, choice := range userChoices {
+		// 根据用户选择的 format 筛选出相同格式的所有解析码
+		sameFormatCodes := make([]string, 0)
+		for _, formatLine := range cs.formatLines {
+			fls := strings.SplitN(formatLine, " ", 2)
+			if choice.format == fls[1] {
+				sameFormatCodes = append(sameFormatCodes, fls[0])
 			}
-
-			// 除了第 1 个 code 之外，其他的 code 之前需要拼接 +
-			if codeBuilder.Len() > 0 {
-				codeBuilder.WriteString("+")
-			}
-			codeBuilder.WriteString(fls[0])
-
-			// 计数，状态维护
-			codeNum++
-			vis[idx] = true
-			continue out
 		}
+
+		// 没有找到相同格式的 code, 说明匹配失败了
+		if len(sameFormatCodes) == 0 {
+			continue
+		}
+
+		// 如果筛选出来的结果中存在用户选择的 code, 直接选择这个 code, 否则选中最后一个 code (通常质量最高)
+		finalCode := sameFormatCodes[len(sameFormatCodes)-1]
+		for _, code := range sameFormatCodes {
+			if code == choice.code {
+				finalCode = code
+				break
+			}
+		}
+
+		// 除了第 1 个 code 之外，其他的 code 之前需要拼接 +
+		if codeBuilder.Len() > 0 {
+			codeBuilder.WriteString("+")
+		}
+		codeBuilder.WriteString(finalCode)
+
+		// 计数，状态维护
+		codeNum++
 	}
+
+	// out:
+	// 	for _, formatLine := range cs.formatLines {
+	// 		fls := strings.SplitN(formatLine, " ", 2)
+	// 		for idx, choice := range userChoices {
+	// 			// 当前的 choice 已成功匹配
+	// 			if vis[idx] {
+	// 				continue
+	// 			}
+
+	// 			// 格式不匹配并且 code 也不匹配
+	// 			if choice.code != fls[0] && choice.format != fls[1] {
+	// 				continue
+	// 			}
+
+	// 			// 除了第 1 个 code 之外，其他的 code 之前需要拼接 +
+	// 			if codeBuilder.Len() > 0 {
+	// 				codeBuilder.WriteString("+")
+	// 			}
+	// 			codeBuilder.WriteString(fls[0])
+
+	// 			// 计数，状态维护
+	// 			codeNum++
+	// 			vis[idx] = true
+	// 			continue out
+	// 		}
+	// 	}
 
 	// 匹配个数和用户选择的数量不一致
 	if codeNum != len(userChoices) {
