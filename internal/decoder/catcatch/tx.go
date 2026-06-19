@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"video-downloader-go/internal/config"
@@ -20,7 +21,7 @@ import (
 // format2Payload 视频格式转换成分辨率标签
 var format2Payload = map[string]string{
 	"hd":    "480P",
-	"shd":   "720p",
+	"shd":   "720P",
 	"fhd":   "1080P",
 	"uhd":   "4K",
 	"hdr10": "臻彩1080P",
@@ -56,6 +57,7 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 
 	var nodes []*cdp.Node
 	var text string
+	var needWaitAd bool
 	err = cc.Run(
 		// 跳转到待解析的 url 地址
 		chromedp.ActionFunc(func(ctx context.Context) error {
@@ -97,12 +99,43 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 				return errors.New("恢复登录态失败")
 			}
 			mylog.Successf("成功识别用户登录状态, 头像 url: %s", src)
+			nodes = make([]*cdp.Node, 0)
+			return nil
+		}),
+
+		// 广告检测
+		chromedp.Nodes(".txp_ad_skip", &nodes, chromedp.ByQuery),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			if len(nodes) == 0 {
+				return nil
+			}
+			nodes = make([]*cdp.Node, 0)
+			needWaitAd = true
+			return nil
+		}),
+
+		// 等待广告
+		chromedp.Text(".txp_ad_countdown", &text, chromedp.ByQuery),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			if !needWaitAd {
+				return nil
+			}
+
+			waitSeconds := 40
+			if realWait, err := strconv.Atoi(strings.TrimSpace(text)); err == nil {
+				waitSeconds = realWait + 2
+			}
+			if waitSeconds <= 0 {
+				return nil
+			}
+
+			mylog.Infof("⌛️ 等待 %d 秒确保广告加载完成...", waitSeconds)
+			time.Sleep(time.Second * time.Duration(waitSeconds))
 			return nil
 		}),
 
 		// 注入 JS 脚本, 弹出清晰度选择框
 		td.ShowPlayerCover(),
-		chromedp.Sleep(time.Second*2),
 
 		// 点击用户指定的清晰度按钮
 		chromedp.Click(fmt.Sprintf("[data-value=%s]", videoFormat), chromedp.ByQuery),
@@ -110,7 +143,7 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 		// 等待清晰度切换
 		chromedp.Reload(),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			mylog.Info("等待页面加载完成...")
+			mylog.Info("⌛️ 等待页面加载完成...")
 			return nil
 		}),
 		chromedp.WaitVisible("[data-status=pause]", chromedp.ByQuery),
