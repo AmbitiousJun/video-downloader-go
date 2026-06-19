@@ -1,7 +1,7 @@
 <h1 align="center">video-downloader-go</h1>
 
 <div align="center">
-  <a href="https://github.com/AmbitiousJun/video-downloader-go/tree/v1.8.12"><img src="https://img.shields.io/github/v/tag/AmbitiousJun/video-downloader-go"></img></a>
+  <a href="https://github.com/AmbitiousJun/video-downloader-go/tree/v1.8.13"><img src="https://img.shields.io/github/v/tag/AmbitiousJun/video-downloader-go"></img></a>
   <a href="https://goreportcard.com/report/github.com/AmbitiousJun/video-downloader-go"><img src="https://goreportcard.com/badge/github.com/AmbitiousJun/video-downloader-go"></img></a>
   <a href="https://github.com/AmbitiousJun/video-downloader-go/releases/latest"><img src="https://img.shields.io/github/downloads/AmbitiousJun/video-downloader-go/total"></img></a>
   <img src="https://img.shields.io/github/license/AmbitiousJun/video-downloader-go"></img>
@@ -70,7 +70,6 @@
 4. 打开 `config.yml` 文件编辑下载配置
 
    > 配置文件仅保留必填项以及适用于本下载示例的部分配置，更详细的配置方法请参照 [示例](https://github.com/AmbitiousJun/video-downloader-go?tab=readme-ov-file#示例)
-
    - 解析器（decoder）配置
 
      ```yaml
@@ -111,7 +110,7 @@
        remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
      cat-catch: # 猫抓解析器
        headless: 1 # 是否开启无头模式, 可选值: -1, 1
-   
+
    # 下载器配置
    downloader:
      use: multi-thread # 要使用哪个下载器，可选值：simple, multi-thread
@@ -121,7 +120,7 @@
      # download-dir: C:/Users/Ambitious/Downloads # 视频文件下载位置
      ts-dir-suffix: temp_ts_files # 暂存 ts 文件的目录后缀
      rate-limit: 10mbps # 下载限速，两种单位可选：mbps, kbps，-1 则不限速
-   
+
    # ts 转换器配置
    #
    # 对于不同的 m3u8, 有的转换器合并后的视频文件会有跳帧问题，可以尝试更换转换器
@@ -135,19 +134,19 @@
    ![](assets/2025-01-07-09-59-17.png)
 
    程序自动调用 `yt-dlp` 解析出了 4 个视频信息（需要在 chrome 登录 vip 账号才能解析出蓝光）
-   
+
    最左边的 `ID` 列即为最终需要传递给程序的 format code
-   
+
    以 `960x540` 为例，需要将 format code `810` 输入到终端后回车继续下载
-   
+
    ![](assets/2025-01-07-10-02-50.png)
-   
+
    待解析成功后，程序就会自动下载并合并视频到指定目录下，期间会实时显示下载进度
-   
+
    ![](assets/2025-01-07-10-03-58.png)
-   
+
    下载成功 ✅
-   
+
    ![](assets/2025-01-07-10-04-46.png)
 
    ![](assets/2025-01-07-10-06-05.png)
@@ -278,15 +277,11 @@ decoder: # 解码器相关配置
 
 有的时候会因为网络问题导致 format code 生成异常，可以直接敲回车重新获取。
 
-
-
 **记住已选择的视频格式：**
 
 批量下载 MG 上的视频时，尽管程序已经提供了自动读取 format code 功能，但是当下载量较大时，还是需要人为频繁地手动输入 format code。
 
 这时可以将 `decoder.youtube-dl.remember-format` 配置设置成 `1`，开启记住已选择的视频格式。
-
-
 
 ```yml
 decoder:
@@ -298,34 +293,28 @@ decoder:
     remember-format: 1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
 ```
 
-
-
 程序会在用户第一次输入 format code 的时候，记住该视频格式（自动根据 url host 进行区分），
 
 在之后读取 format code 的时候，程序会自动进行匹配，匹配成功则自动进行解析，若失败，则依旧是手动输入。
 
 > 有的网站使用 youtube-dl 解析出来的视频格式中，不同的 format code 的格式是一样的，程序会按照从上到下按顺序匹配，并使用最先匹配到的结果。
 
-
-
 7. 对不同的网站进行定制化配置
 
 如果想要不同的网站下载任务同时开始进行，而不同网站使用的解析器又不相同，或者不完全相同时，可以采用定制化配置，通过 `host` 来区分配置。
 
-可以在 `customs`  属性中配置多个定制化配置，在 `customs.hosts` 属性下配置要匹配的域名，参考配置如下：
-
-
+可以在 `customs` 属性中配置多个定制化配置，在 `customs.hosts` 属性下配置要匹配的域名，参考配置如下：
 
 ```yml
 # 针对不同的域名进行定制化配置
-# 
+#
 # 针对 decoder 进行定制化配置
 # 可配置的属性：use, resource-type, youtube-dl.cookies-from, youtube-dl.format-codes, youtube-dl.remember-format
 #
 # 针对 transfer 进行定制化配置
 # 可配置的属性：use
 customs:
-  - decoder: 
+  - decoder:
       use: youtube-dl
       youtube-dl:
         cookies-from: chrome
@@ -350,6 +339,7 @@ customs:
 借助 [chromedp](https://github.com/chromedp/chromedp?tab=readme-ov-file) 和 [cat-catch](https://github.com/xifangczy/cat-catch) 实现了一个 Tx 资源解析器 (cat-catch:tx)，下面介绍一下怎么使用
 
 > 注：
+>
 > 1. 该解析器依赖于 Chrome 浏览器
 > 2. 该解析器在 video-downloader-go `v1.3.0` 版本之后加入支持
 > 3. 建议迫不得已情况下才使用猫抓解析器，因为失败率较高
