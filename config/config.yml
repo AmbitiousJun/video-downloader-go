@@ -33,14 +33,14 @@ transfer:
   ts-filename-regex: _(\d+)\. # 正则表达式，用于匹配出 ts 文件的序号
 
 # 针对不同的域名进行定制化配置
-# 
+#
 # 针对 decoder 进行定制化配置
 # 可配置的属性：use, resource-type, youtube-dl.cookies-from, youtube-dl.format-codes, youtube-dl.remember-format
 #
 # 针对 transfer 进行定制化配置
 # 可配置的属性：use
 customs:
-  - decoder: 
+  - decoder:
       use: youtube-dl
       youtube-dl:
         cookies-from: chrome
