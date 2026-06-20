@@ -58,6 +58,7 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 	var nodes []*cdp.Node
 	var text string
 	var needWaitAd bool
+	var evalRes []string
 	err = cc.Run(
 		// 跳转到待解析的 url 地址
 		chromedp.ActionFunc(func(ctx context.Context) error {
@@ -99,26 +100,27 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 				return errors.New("恢复登录态失败")
 			}
 			mylog.Successf("成功识别用户登录状态, 头像 url: %s", src)
-			nodes = make([]*cdp.Node, 0)
 			return nil
 		}),
 
 		// 广告检测
-		chromedp.Nodes(".txp_ad_skip", &nodes, chromedp.ByQuery),
+		chromedp.Evaluate(`Array.from(document.querySelectorAll('.txp_ad_skip')).map(e => e.outerHTML)`, &evalRes),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			if len(nodes) == 0 {
+			if len(evalRes) == 0 {
 				return nil
 			}
-			nodes = make([]*cdp.Node, 0)
 			needWaitAd = true
 			return nil
 		}),
 
 		// 等待广告
-		chromedp.Text(".txp_ad_countdown", &text, chromedp.ByQuery),
+		chromedp.Evaluate(`Array.from(document.querySelectorAll('.txp_ad_countdown')).map(e => e.innerHTML)`, &evalRes),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			if !needWaitAd {
 				return nil
+			}
+			if len(evalRes) > 0 {
+				text = evalRes[0]
 			}
 
 			waitSeconds := 40
