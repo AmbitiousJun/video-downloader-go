@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"video-downloader-go/internal/config"
 	"video-downloader-go/internal/util/mylog"
@@ -141,28 +142,57 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 
 		// 点击用户指定的清晰度按钮
 		chromedp.Click(fmt.Sprintf("[data-value=%s]", videoFormat), chromedp.ByQuery),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			var value string
+			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*20)
+			defer cancel()
+
+			tipOnce := sync.OnceFunc(func() {
+				mylog.Infof("⌛ 当前清晰度为: [%s], 正在切换至目标清晰度, 请稍候...", value)
+			})
+
+			for {
+				select {
+				case <-timeoutCtx.Done():
+					return fmt.Errorf("无法将清晰度切换为: %v", formatPayload)
+				default:
+					err := chromedp.Run(ctx, chromedp.Text(".txp_btn_definition .txp_label", &value, chromedp.ByQuery))
+					if err != nil {
+						return fmt.Errorf("无法获取当前的清晰度: %v", err)
+					}
+
+					if value == formatPayload {
+						mylog.Successf("成功切换到清晰度: %s", value)
+						return nil
+					}
+
+					tipOnce()
+					time.Sleep(100 * time.Millisecond)
+				}
+			}
+		}),
 
 		// 等待清晰度切换
-		chromedp.Reload(),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			mylog.Info("⌛️ 等待页面加载完成...")
-			return nil
-		}),
-		chromedp.WaitVisible("[data-status=pause]", chromedp.ByQuery),
+		// chromedp.Reload(),
+		// chromedp.ActionFunc(func(ctx context.Context) error {
+		// 	mylog.Info("⌛️ 等待页面加载完成...")
+		// 	return nil
+		// }),
+		// chromedp.WaitVisible("[data-status=pause]", chromedp.ByQuery),
 
 		// 获取当前的清晰度
-		td.ShowPlayerCover(),
-		chromedp.Text(".txp_btn_definition .txp_label", &text, chromedp.ByQuery),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			if text == "" {
-				return errors.New("获取不到视频清晰度")
-			}
-			if text != formatPayload {
-				return fmt.Errorf("获取到的清晰度 [%s] 与预期 [%s] 不一致", text, formatPayload)
-			}
-			mylog.Successf("成功获取到清晰度: %s", text)
-			return nil
-		}),
+		// td.ShowPlayerCover(),
+		// chromedp.Text(".txp_btn_definition .txp_label", &text, chromedp.ByQuery),
+		// chromedp.ActionFunc(func(ctx context.Context) error {
+		// 	if text == "" {
+		// 		return errors.New("获取不到视频清晰度")
+		// 	}
+		// 	if text != formatPayload {
+		// 		return fmt.Errorf("获取到的清晰度 [%s] 与预期 [%s] 不一致", text, formatPayload)
+		// 	}
+		// 	mylog.Successf("成功获取到清晰度: %s", text)
+		// 	return nil
+		// }),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "解析页面时发生错误")

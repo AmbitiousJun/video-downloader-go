@@ -7,7 +7,7 @@ decoder:
   youtube-dl: # youtube-dl 解析器相关配置
     cookies-from: chrome # 从哪个浏览器获取 cookie，推荐 firefox，该参数会直接传递给 youtube-dl，传入 none 则忽略
     format-codes: # 下载视频的编码，可传多个，按照顺序进行解析，两种格式：'视频编码+音频编码' 或者 '视频编码'，只会下载首次解析成功的格式，可以不传此参数，在程序执行时手动选择
-    remember-format: -1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
+    remember-format: 1 # 是否记住视频格式，程序自动根据 host 进行区分，每次启动程序时缓存都会重置，可选值：-1, 1
   cat-catch: # 猫抓解析器
     headless: 1 # 是否开启无头模式, 可选值: -1, 1
     sites: # 针对不同的网站分别实现猫抓解析器
