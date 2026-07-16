@@ -67,7 +67,7 @@ func TestReadJsonConfig(t *testing.T) {
 
 	td := new(catcatch.TxDecoder)
 
-	cookies := td.ReadCookiesFromConfig()
+	cookies := td.ReadCookiesFromConfig(config.G.Decoder.CatCatch.Sites.Tx.CookieJsonPath)
 	for _, cookie := range cookies {
 		mylog.Successf("%v", cookie)
 	}

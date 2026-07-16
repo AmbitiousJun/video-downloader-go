@@ -21,6 +21,7 @@ func init() {
 	decoderMap = map[string]*DecoderHolder{
 		config.DecoderYoutubeDl:  {},
 		config.DecoderCatCatchTx: {},
+		config.DecoderCatCatchMg: {},
 	}
 }
 
@@ -45,6 +46,13 @@ func GetDecoder(use string) D {
 	if use == config.DecoderCatCatchTx {
 		holder.Once.Do(func() {
 			holder.dcd = new(catcatch.TxDecoder)
+		})
+		return holder.dcd
+	}
+
+	if use == config.DecoderCatCatchMg {
+		holder.Once.Do(func() {
+			holder.dcd = new(catcatch.MgDecoder)
 		})
 		return holder.dcd
 	}

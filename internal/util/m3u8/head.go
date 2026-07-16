@@ -39,7 +39,7 @@ func ResolveXMap(line string) (*HeadInfo, error) {
 
 	// 2 逐字段解析
 	headInfo := new(HeadInfo)
-	kvs := strings.SplitN(line, `="`, -1)
+	kvs := strings.Split(line, `="`)
 	if len(kvs)%2 != 0 {
 		return nil, errors.New("不是正确的 EXT-X-MAP 格式: " + line)
 	}

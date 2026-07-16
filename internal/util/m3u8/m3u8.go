@@ -2,6 +2,7 @@ package m3u8
 
 import (
 	"bufio"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -115,6 +116,10 @@ func ReadTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error) {
 		// 2 封装对象
 		ans = append(ans, &TsMeta{Url: line, Index: len(ans) + 1})
 	}
+	if scanner.Err() != nil {
+		return nil, fmt.Errorf("扫描文件出错: %v", scanner.Err())
+	}
+
 	// 3 删除 m3u8 文件
 	err = os.Remove(m3u8Url)
 	if err != nil {
@@ -171,18 +176,20 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 		// 逐行扫描 m3u8 文件，将 ts 分片封装成 meta 对象
 		scanner := bufio.NewScanner(resp.Body)
 		ans := []*TsMeta{}
-		xMapUrl := ""
+		// xMapUrl := ""
 		for scanner.Scan() {
 			mt := TsMeta{Index: len(ans) + 1}
 			line := scanner.Text()
 
 			// 判断是否是 X-MAP Head 头
 			if strings.HasPrefix(line, ExtXMap) {
-				if hi, err := ResolveXMap(line); err == nil {
-					xMapUrl = baseUrl + "/" + hi.Uri
+				if hi, err := ResolveXMap(line); err == nil && hi.Uri != "" {
+					mt.Url = baseUrl + "/" + hi.Uri
+					ans = append(ans, &mt)
+					continue
+					// xMapUrl = baseUrl + "/" + hi.Uri
 				}
 			}
-			mt.HeadUrl = xMapUrl
 
 			if strings.HasPrefix(line, "#") || strings.TrimSpace(line) == "" {
 				// 去除注释和空行
@@ -193,9 +200,14 @@ func readHttpTsUrls(m3u8Url string, headers map[string]string) ([]*TsMeta, error
 				// 补充 baseUrl
 				line = baseUrl + "/" + line
 			}
+			// mt.HeadUrl = xMapUrl
 			mt.Url = line
 
 			ans = append(ans, &mt)
+		}
+
+		if scanner.Err() != nil {
+			return nil, fmt.Errorf("扫描文件出错: %v", scanner.Err())
 		}
 
 		return ans, nil
