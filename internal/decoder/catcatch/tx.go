@@ -2,9 +2,7 @@ package catcatch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,14 +11,13 @@ import (
 	"video-downloader-go/internal/util/mylog"
 
 	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/pkg/errors"
 )
 
-// format2Payload 视频格式转换成分辨率标签
-var format2Payload = map[string]string{
+// format2PayloadTx 视频格式转换成分辨率标签
+var format2PayloadTx = map[string]string{
 	"hd":    "480P",
 	"shd":   "720P",
 	"fhd":   "1080P",
@@ -31,6 +28,7 @@ var format2Payload = map[string]string{
 // 适配腾讯视频的猫抓解析器, id => cat-catch:tx
 // 实现解析器接口
 type TxDecoder struct {
+	baseDecoder
 	url string // 记录当前正在解析的 url 地址
 }
 
@@ -41,7 +39,7 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 	if videoFormat == "" {
 		return nil, errors.New("未配置要解析的清晰度")
 	}
-	formatPayload, ok := format2Payload[videoFormat]
+	formatPayload, ok := format2PayloadTx[videoFormat]
 	if !ok {
 		return nil, fmt.Errorf("错误的清晰度配置: %s", videoFormat)
 	}
@@ -54,7 +52,7 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 
 	// 读取 Cookie
 	mylog.Info("正在读取 Cookie ...")
-	cookies := td.ReadCookiesFromConfig()
+	cookies := td.ReadCookiesFromConfig(config.G.Decoder.CatCatch.Sites.Tx.CookieJsonPath)
 
 	var nodes []*cdp.Node
 	var text string
@@ -69,23 +67,7 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 		chromedp.Navigate(url),
 
 		// 注入 Cookie
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			mylog.Info("正在注入 Cookie ...")
-			expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
-			for _, cookie := range cookies {
-				err := network.SetCookie(cookie.Name, cookie.Value).
-					WithExpires(&expr).
-					WithDomain(cookie.Domain).
-					WithPath(cookie.Path).
-					WithSecure(false).
-					Do(ctx)
-				if err != nil {
-					mylog.Warnf("注入 Cookie 失败, url: %s, error: %v", url, err)
-					return err
-				}
-			}
-			return nil
-		}),
+		td.SetCookiesActionFunc(cookies, url),
 		chromedp.Reload(),
 		chromedp.WaitVisible(".quick_user_avatar", chromedp.ByQuery),
 		chromedp.Sleep(time.Millisecond*100),
@@ -171,28 +153,6 @@ func (td *TxDecoder) FetchDownloadLinks(url string) ([]string, error) {
 				}
 			}
 		}),
-
-		// 等待清晰度切换
-		// chromedp.Reload(),
-		// chromedp.ActionFunc(func(ctx context.Context) error {
-		// 	mylog.Info("⌛️ 等待页面加载完成...")
-		// 	return nil
-		// }),
-		// chromedp.WaitVisible("[data-status=pause]", chromedp.ByQuery),
-
-		// 获取当前的清晰度
-		// td.ShowPlayerCover(),
-		// chromedp.Text(".txp_btn_definition .txp_label", &text, chromedp.ByQuery),
-		// chromedp.ActionFunc(func(ctx context.Context) error {
-		// 	if text == "" {
-		// 		return errors.New("获取不到视频清晰度")
-		// 	}
-		// 	if text != formatPayload {
-		// 		return fmt.Errorf("获取到的清晰度 [%s] 与预期 [%s] 不一致", text, formatPayload)
-		// 	}
-		// 	mylog.Successf("成功获取到清晰度: %s", text)
-		// 	return nil
-		// }),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "解析页面时发生错误")
@@ -239,32 +199,6 @@ func (td *TxDecoder) ShowPlayerCover() chromedp.Action {
 		}
 		return nil
 	})
-}
-
-// ReadCookiesFromConfig 根据全局配置中的 JSON Cookie 文件路径加载 Cookie 数据
-//
-// 方法不返回异常, 如果解析出错, 打印日志并直接返回一个空切片
-func (td *TxDecoder) ReadCookiesFromConfig() []*UserCookie {
-	res := make([]*UserCookie, 0)
-
-	jsonPath := config.G.Decoder.CatCatch.Sites.Tx.CookieJsonPath
-	if jsonPath == "" {
-		return res
-	}
-
-	// 读取文件
-	jsonBytes, err := os.ReadFile(jsonPath)
-	if err != nil {
-		mylog.Warnf("加载 Cookie 异常, 读取文件失败, path: %s, error: %v", jsonPath, err)
-		return res
-	}
-
-	// 反序列化
-	if err = json.Unmarshal(jsonBytes, &res); err != nil {
-		mylog.Warnf("加载 Cookie 异常, 反序列化 JSON 失败, path: %s, error: %v", jsonPath, err)
-	}
-
-	return res
 }
 
 // ChooseDefaultResult 选中默认的 m3u8 地址

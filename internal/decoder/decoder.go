@@ -55,6 +55,8 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 					dmt, decodeErr = useYoutubeDlDecode(dcd, vmt)
 				case config.DecoderCatCatchTx:
 					dmt, decodeErr = useCatCatchTxDecode(dcd, vmt)
+				case config.DecoderCatCatchMg:
+					dmt, decodeErr = useCatCatchMgDecode(dcd, vmt)
 				default:
 					decodeErr = errors.New("不支持的解析器类型")
 				}
@@ -85,6 +87,13 @@ func ListenAndDecode(list *meta.TaskDeque[meta.Video], decodeSuccess DecodeSucce
 			mylog.Errorf("视频下载地址解析失败: %v", decodeErr)
 		}
 	}()
+}
+
+// useCatCatchMgDecode 调用 cat-catch:mg 解析器来解析下载地址
+func useCatCatchMgDecode(dcd D, vmt *meta.Video) (*meta.Download, error) {
+	return decode2Dmt(dcd, vmt, func(s []string, v *meta.Video) *meta.Download {
+		return meta.NewDownloadMeta(s[0], v.Name, v.Url)
+	})
 }
 
 // useCatCatchTxDecode 调用 cat-catch:tx 解析器来解析下载地址

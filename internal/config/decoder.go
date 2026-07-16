@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"video-downloader-go/internal/util/mylog"
 
@@ -14,6 +15,7 @@ const (
 	DecoderNone       = "none"
 	DecoderYoutubeDl  = "youtube-dl"
 	DecoderCatCatchTx = "cat-catch:tx"
+	DecoderCatCatchMg = "cat-catch:mg"
 )
 
 const (
@@ -32,7 +34,7 @@ const (
 )
 
 type Decoder struct {
-	Use       string          `yaml:"use"`        // 使用哪种解析方式，可选值：none, youtube-dl
+	Use       string          `yaml:"use"`        // 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx, cat-catch:mg
 	MaxRetry  int             `yaml:"max-retry"`  // 最大的尝试解析次数
 	YoutubeDL YoutubeDlConfig `yaml:"youtube-dl"` // youtube-dl 解析器相关配置
 	CatCatch  CatCatchConfig  `yaml:"cat-catch"`  // cat-catch 解析器
@@ -51,14 +53,18 @@ type YtDlFormatCode struct {
 	ExpectedLinkNums int
 }
 
+// CatCatchSiteConfig 猫抓解析器网站配置
+type CatCatchSiteConfig struct {
+	CookieJsonPath string `yaml:"cookie-json-path"` // Cookie 文件绝对路径
+	VideoFormat    string `yaml:"video-format"`     // 视频格式
+}
+
 // 猫抓解析器配置
 type CatCatchConfig struct {
 	Headless int `yaml:"headless"` // 是否开启无头模式
 	Sites    struct {
-		Tx struct {
-			CookieJsonPath string `yaml:"cookie-json-path"` // Cookie 文件绝对路径
-			VideoFormat    string `yaml:"video-format"`     // 视频格式
-		} `yaml:"tx"`
+		Tx CatCatchSiteConfig `yaml:"tx"`
+		Mg CatCatchSiteConfig `yaml:"mg"`
 	} `yaml:"sites"` // 猫抓解析器需要对每个站点单独适配
 }
 
@@ -83,7 +89,7 @@ func checkDecoderConfig() error {
 // allowEmpty 参数为 true 时，对于空值不进行校验，也不返回错误
 func (dc *Decoder) checkFields(allowEmpty bool) error {
 	// 1 检查解析器类型是否合法
-	validTypes := []string{DecoderNone, DecoderYoutubeDl, DecoderCatCatchTx}
+	validTypes := []string{DecoderNone, DecoderYoutubeDl, DecoderCatCatchTx, DecoderCatCatchMg}
 	dc.Use = strings.TrimSpace(dc.Use)
 
 	if dc.Use == "" && !allowEmpty {
@@ -93,11 +99,8 @@ func (dc *Decoder) checkFields(allowEmpty bool) error {
 	flag := false
 
 	if dc.Use != "" {
-		for _, valid := range validTypes {
-			if valid == dc.Use {
-				flag = true
-				break
-			}
+		if slices.Contains(validTypes, dc.Use) {
+			flag = true
 		}
 		if !flag {
 			return errors.New("解析器类型配置错误，可选值：" + strings.Join(validTypes, ","))
@@ -136,23 +139,13 @@ func (dc *Decoder) checkFields(allowEmpty bool) error {
 // IsHeadlessValid 检查用户配置的 headless 配置是否有效
 func (c *CatCatchConfig) IsHeadlessValid() bool {
 	valids := []int{CatCatchHeadlessActive, CatCatchHeadlessDeactive}
-	for _, valid := range valids {
-		if valid == c.Headless {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(valids, c.Headless)
 }
 
 // IsRememberFormatValid 检查对象中的 RememberFormat 属性是否有效
 func (c *YoutubeDlConfig) IsRememberFormatValid() bool {
 	validRfs := []int{YoutubeDlRememberFormatDeactive, YoutubeDlRememberFormatActive}
-	for _, valid := range validRfs {
-		if valid == c.RememberFormat {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validRfs, c.RememberFormat)
 }
 
 // 检查 format code
