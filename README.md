@@ -334,15 +334,14 @@ customs:
 
 > 注：目前仅支持对解析器进行定制化配置
 
-8. 使用猫抓解析器解析 Tx 资源
+8. 使用猫抓解析器解析 TX 资源
 
-借助 [chromedp](https://github.com/chromedp/chromedp?tab=readme-ov-file) 和 [cat-catch](https://github.com/xifangczy/cat-catch) 实现了一个 Tx 资源解析器 (cat-catch:tx)，下面介绍一下怎么使用
+借助 [chromedp](https://github.com/chromedp/chromedp?tab=readme-ov-file) 和 [cat-catch](https://github.com/xifangczy/cat-catch) 实现了一个 TX 资源解析器 (cat-catch:tx)，下面介绍一下怎么使用
 
 > 注：
 >
 > 1. 该解析器依赖于 Chrome 浏览器
 > 2. 该解析器在 video-downloader-go `v1.3.0` 版本之后加入支持
-> 3. 建议迫不得已情况下才使用猫抓解析器，因为失败率较高
 
 首先，Chrome 浏览器安装好 `EditThisCookie` 插件（没有科学上网环境的话用 Edge 浏览器也可以）
 
@@ -389,3 +388,24 @@ decoder:
 > 注：
 >
 > `decoder.cat-catch.headless` 配置通常保持 1 即可，意思是在解析的时候不打开 Chrome GUI 界面，但如果程序报错无法切换清晰度，可能是程序被网站检测出自动化了，可以尝试将该配置设置为 -1 后重新运行程序
+
+
+
+10. 使用猫抓解析器解析 MG 资源
+
+导出 `mgtv.com` 域名下的 JSON 格式的 cookie 记录，接着按照与 `cat-catch:tx` 相同的配置流程配置好解析器即可开始使用，示例配置如下：
+
+```yaml
+# 解析器配置
+#
+# 注：在 windows 平台下使用 youtube-dl 解析器时，从 chrome, edge 等浏览器获取 cookie 有可能会失败，换成 firefox 即可
+decoder:
+  use: cat-catch:mg # 使用哪种解析方式，可选值：none, youtube-dl, cat-catch:tx, cat-catch:mg
+  cat-catch: # 猫抓解析器
+    headless: 1 # 是否开启无头模式, 可选值: -1, 1
+    sites: # 针对不同的网站分别实现猫抓解析器
+      mg:
+        cookie-json-path: cookie-files/mg.json # Cookie 文件存放路径
+        video-format: 1080PVIP # 视频格式, 可选值: 480P, 576P, 720P, 1080PVIP
+```
+
