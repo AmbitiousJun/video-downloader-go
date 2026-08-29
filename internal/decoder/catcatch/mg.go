@@ -146,9 +146,10 @@ func (mg *MgDecoder) FetchDownloadLinks(url string) ([]string, error) {
 			for {
 				select {
 				case <-timeoutCtx.Done():
+					time.Sleep(time.Hour)
 					return fmt.Errorf("无法将清晰度切换为: %v", formatPayload)
 				default:
-					err := chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector("._Button_1qs9l_1").innerText`, &value))
+					err := chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector(".clarityBtn ._Button_1qs9l_1").innerText`, &value))
 					if err != nil {
 						return fmt.Errorf("无法获取当前的清晰度: %v", err)
 					}
@@ -157,6 +158,7 @@ func (mg *MgDecoder) FetchDownloadLinks(url string) ([]string, error) {
 					if err != nil {
 						return fmt.Errorf("检测清晰度切换进度失败: %v", err)
 					}
+
 					if !strings.Contains(tip, "已为您切换至") && !strings.Contains(tip, "已切换至") {
 						tipOnce()
 						time.Sleep(100 * time.Millisecond)
