@@ -1,7 +1,7 @@
 <h1 align="center">video-downloader-go</h1>
 
 <div align="center">
-  <a href="https://github.com/AmbitiousJun/video-downloader-go/tree/v1.9.0"><img src="https://img.shields.io/github/v/tag/AmbitiousJun/video-downloader-go"></img></a>
+  <a href="https://github.com/AmbitiousJun/video-downloader-go/tree/v1.9.1"><img src="https://img.shields.io/github/v/tag/AmbitiousJun/video-downloader-go"></img></a>
   <a href="https://goreportcard.com/report/github.com/AmbitiousJun/video-downloader-go"><img src="https://goreportcard.com/badge/github.com/AmbitiousJun/video-downloader-go"></img></a>
   <a href="https://github.com/AmbitiousJun/video-downloader-go/releases/latest"><img src="https://img.shields.io/github/downloads/AmbitiousJun/video-downloader-go/total"></img></a>
   <img src="https://img.shields.io/github/license/AmbitiousJun/video-downloader-go"></img>
@@ -389,8 +389,6 @@ decoder:
 >
 > `decoder.cat-catch.headless` 配置通常保持 1 即可，意思是在解析的时候不打开 Chrome GUI 界面，但如果程序报错无法切换清晰度，可能是程序被网站检测出自动化了，可以尝试将该配置设置为 -1 后重新运行程序
 
-
-
 10. 使用猫抓解析器解析 MG 资源
 
 导出 `mgtv.com` 域名下的 JSON 格式的 cookie 记录，接着按照与 `cat-catch:tx` 相同的配置流程配置好解析器即可开始使用，示例配置如下：
@@ -408,4 +406,3 @@ decoder:
         cookie-json-path: cookie-files/mg.json # Cookie 文件存放路径
         video-format: 1080PVIP # 视频格式, 可选值: 480P, 576P, 720P, 1080PVIP
 ```
-
